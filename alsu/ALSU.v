@@ -53,8 +53,8 @@ always@(*)
         end
        XOR: 
         begin
-                R = A ^ B;
-                C = 1'b0;
+            R = A ^ B;
+            C = 1'b0;
         end
        NOT: 
         begin
@@ -69,9 +69,11 @@ always@(*)
         begin//IF R = 0 , Z = 1?
            R = {(DATAWIDTH){1'bx}};
         end
-    end
+      endcase
+      
+   Z = (R == {(DATAWIDTH){1'b0}});
+   N = R[DATAWIDTH - 1];
+   end
     
-assign Z = (R == {(DATAWIDTH){1'b0}});
-assign N = R[DATAWIDTH - 1];
 
 endmodule
