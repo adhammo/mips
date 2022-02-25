@@ -29,17 +29,17 @@ module register_tb;
     load = 0;
     #10;
 
-    // clk3
+    // clk 3
     if (out != in) // check output
       $display("Failed to load/enable");
     reset = 0; // reset
     #10;
 
-    // clk4
+    // clk 4
     reset = 1;
     #10;
 
-    // clk5
+    // clk 5
     reset = 1;
     if (out != {WIDTH{1'b0}}) // check output
       $display("Failed to reset");
@@ -49,7 +49,7 @@ module register_tb;
 
   always #5 clock = ~clock;
 
-  register #(.WIDTH(WIDTH)) reg1(.clock(clock), .reset(reset),
+  register #(.WIDTH(WIDTH)) regi(.clock(clock), .reset(reset),
                                  .load(load),
                                  .in(in), 
                                  .out(out));

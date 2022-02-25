@@ -38,7 +38,7 @@ module register_oe_tb;
     reset = 0; // reset
     #10;
 
-    // clk4
+    // clk 4
     reset = 1;
     enable = 1; // enable output
     #10;
@@ -53,7 +53,7 @@ module register_oe_tb;
 
   always #5 clock = ~clock;
 
-  register_oe #(.WIDTH(WIDTH)) reg_oe1(.clock(clock), .reset(reset),
+  register_oe #(.WIDTH(WIDTH)) regi_oe(.clock(clock), .reset(reset),
                                        .load(load), .enable(enable),
                                        .in(in), 
                                        .out(out));
