@@ -1,5 +1,5 @@
 module register_oe #(parameter WIDTH=8) (
-  input clock, reset,
+  input clk, rst,
   input load, enable,
   input [WIDTH-1:0] in,
   output wire [WIDTH-1:0] out
@@ -8,7 +8,7 @@ module register_oe #(parameter WIDTH=8) (
   wire [WIDTH-1:0] internal;
 
   // Register
-  register #(.WIDTH(WIDTH)) regi(.clock(clock), .reset(reset),
+  register #(.WIDTH(WIDTH)) regi(.clk(clk), .rst(rst),
                                  .load(load),
                                  .in(in), 
                                  .out(internal));
