@@ -1,6 +1,6 @@
 `include "../registers/register_2oe.v"
 module register_file (
-  input clock, reset,
+  input clk, rst,
   input write,
   input [2:0] wreg, rreg1, rreg2,
   input [15:0] wd,
@@ -30,8 +30,8 @@ module register_file (
   // Generate x8 16-bit registers
   genvar i;
   generate
-    for (i=0; i<8; i=i+1) begin : generate_registers
-      register_2oe #(.WIDTH(16)) regi_2oe(.clock(clock), .reset(reset),
+    for (i = 0; i < 8; i = i + 1) begin : gen_regi_2oe
+      register_2oe #(.WIDTH(16)) regi_2oe(.clk(clk), .rst(rst),
                                           .load(loads[i]), .enable1(enables1[i]), .enable2(enables2[i]),
                                           .in(wd), 
                                           .out1(rd1), .out2(rd2));

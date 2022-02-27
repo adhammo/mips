@@ -1,6 +1,6 @@
 module register_file_tb;
 
-  reg clock, reset;
+  reg clk, rst;
   reg write;
   reg [2:0] wreg, rreg1, rreg2;
   reg [15:0] in;
@@ -11,15 +11,15 @@ module register_file_tb;
     $dumpvars;
   
     // init
-    clock = 0;
-    reset = 1;
+    clk = 0;
+    rst = 1;
     write = 0;
 
     // reset
-    reset = 0; #6;
+    rst = 0; #6;
 
     // clk 1
-    reset = 1;
+    rst = 1;
     in = {8{2'b10}};
     wreg = 3;
     write = 1; // write reg3
@@ -46,20 +46,20 @@ module register_file_tb;
     // clk 4
     if (out2 != in) // check output2
       $display("Failed to write/rreg2");
-    reset = 0; // reset
+    rst = 0; // reset
     #10;
 
     // clk 5
-    reset = 1;
+    rst = 1;
     if (out1 != 16'b0 || out2 != 16'b0) // check output1 and output2
       $display("Failed to reset");
 
     #8 $finish;
   end
 
-  always #5 clock = ~clock;
+  always #5 clk = ~clk;
 
-  register_file regi_file(.clock(clock), .reset(reset),
+  register_file regi_file(.clk(clk), .rst(rst),
                           .write(write),
                           .wreg(wreg), .rreg1(rreg1), .rreg2(rreg2),
                           .wd(in),
