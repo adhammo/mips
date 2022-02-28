@@ -1,14 +1,12 @@
 module ALSU_tb();
 
-parameter DATAWIDTH = 16;
-
-reg [DATAWIDTH - 1: 0] A, B;
+reg [15: 0] A, B;
 reg [2: 0] FUNC;
-wire [DATAWIDTH - 1: 0] R;
+wire [15: 0] R;
 wire Z, N, C;
 
 
-ALSU #(.DATAWIDTH(DATAWIDTH)) alsu (.R(R), .Z(Z), .N(N), .C(C), .A(A), .B(B), .FUNC(FUNC));
+ALSU  alsu(.r(R), .z(Z), .n(N), .c(C), .a(A), .b(B), .FUNC(FUNC));
 
 initial 
     begin
