@@ -1,4 +1,4 @@
-`include "../register_file/register_file.v"
+`include "register_file/register_file.v"
 module rd_wr_unit (
   input clk, rst,
   input skip, dirty,

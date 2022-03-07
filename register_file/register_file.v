@@ -1,4 +1,4 @@
-`include "../registers/register_2oe.v"
+`include "registers/register_2oe.v"
 module register_file (
   input clk, rst,
   input write,

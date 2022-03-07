@@ -1,4 +1,4 @@
-`include "../alsu/alsu.v"
+`include "alsu/alsu.v"
 module exec_unit (
   input skip,
   input [15:0] a, b,
@@ -7,7 +7,7 @@ module exec_unit (
   output wire c, z, n
 );
 
-  wire [15:0] r,
+  wire [15:0] r;
 
   // Exec output (skip)
   assign ra = !skip ? r : a;

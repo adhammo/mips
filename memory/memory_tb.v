@@ -20,13 +20,13 @@ initial begin
     in = 16'd15;
 
     #5
-    if(out == in)
+    if(out === in)
         $display("Write1 succeeded.");
     
     #10
     addr = addr + 3'd5;
     in = 16'd10;
-    if(out == in)
+    if(out === in)
         $display("Write2 succeeded.");
 
     #10
@@ -36,11 +36,11 @@ initial begin
         $display("Read succeeded.");
     #10
     addr = 16'd0;
-    if(out == 16'd10)
+    if(out === 16'd10)
         $display("Write1 succeeded.");
     #5
     enable = 1'b1;
-    if(out == {(16){1'bz}})
+    if(out === {(16){1'bz}})
         $display("Disable read succeeded.");
 
     #5
