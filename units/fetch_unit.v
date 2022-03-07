@@ -7,9 +7,12 @@ module fetch_unit(
 );
   wire write;
 
+  initial begin
+    $readmemh("testCode.txt",instrMemory.mem); 
+  end
   //Memory
-  memory #(.DATAWIDTH(32), .ADDRWIDTH(18)) dataMemory(
-      .clk(clk), .enable(0),
-      .write(1), .addr(pc[17:0]), 
-      .in(0), .out(instr));
+  memory #(.DATAWIDTH(32), .ADDRWIDTH(18)) instrMemory(
+      .clk(clk), .enable(1'b0),
+      .write(1'b1), .addr(pc[17:0]), 
+      .in(32'd0), .out(instr));
 endmodule

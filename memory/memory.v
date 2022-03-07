@@ -1,8 +1,7 @@
 module memory #(parameter DATAWIDTH = 16, parameter ADDRWIDTH = 20)(
-  input clk,
-  input write, enable,
-  input [ADDRWIDTH - 1:0] addr,
-  input [DATAWIDTH - 1:0] in,
+  input wire clk, write, enable,
+  input wire [ADDRWIDTH - 1:0] addr,
+  input wire [DATAWIDTH - 1:0] in,
   output wire [DATAWIDTH - 1:0] out
 );
 

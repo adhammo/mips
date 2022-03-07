@@ -20,9 +20,9 @@ module mips (
     wire stallD;
     //pipeline registers
     wire [63:0] if_id;
-    wire [103:0] id_ex;
+    wire [104:0] id_ex;
     wire [88:0] ex_me;
-    wire [84:0] me_wb;
+    wire [68:0] me_wb;
     //
     wire [2:0] ex_rdst;
     wire ex_load;
@@ -34,7 +34,7 @@ module mips (
     wire [2:0] branch;
     //EU & ME signals
     wire z,n,c;
-    reg ZF, NF, CF;
+    wire ZF, NF, CF;
     wire [1:0] fwd1, fwd2;
     wire [2:0] znc;
     reg  [15:0] a, b, s1, s2;
@@ -53,7 +53,7 @@ module mips (
                 .ex_ld(id_ex[100]), .stallD(stallD));
     register_file RegFile(.clk(clk), .rst(rst), .wd(wd),
                 .wreg(me_wb[34:32]), .rreg1(instrD[12:10]), .rd1(rData1),
-                .rreg2(instrD[15:13]), .rd2(rData2), .wr(~skipW & ~dirtyW));
+                .rreg2(instrD[15:13]), .rd2(rData2), .write(~me_wb[67] & ~dirtyW));
     control_unit CU(.opcode(instrD[6:0]), .wb_cntrl(skipW), .me_cntrl({skipM, push, pop, wr}),
                     .ex_cntrl({skipE, func}), .instr_id_srcs({imm1, imm2, load, setC, branch}));
 
@@ -78,7 +78,7 @@ module mips (
     register #(.WIDTH(32)) SP(.clk(clk), .rst(rst),
             .load((ex_me[85] || ex_me[86]) && !(dirtyM || ex_me[84])), 
             .in(sp_in), .out(sp));
-    register  #(.WIDTH(85)) ME_WB(.clk(clk), .rst(rst), .load(~keepW),
+    register  #(.WIDTH(69)) ME_WB(.clk(clk), .rst(rst), .load(~keepW),
                 .in({ex_me[34:0], r_s1, do, ex_me[83], ex_me[84]}), .out(me_wb)); 
 
 
@@ -125,7 +125,7 @@ module mips (
     //SP input mux
     assign sp_in = ex_me[85]? sp - 2'd2 : sp + 2'd2;
     //WB output mux
-    assign wd = me_wb[84]? me_wb[50:34] : me_wb[66:51];
+    assign wd = me_wb[68]? me_wb[50:34] : me_wb[66:51];
 
 
 endmodule

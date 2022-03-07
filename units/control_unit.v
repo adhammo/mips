@@ -3,7 +3,7 @@ module control_unit (
     output reg wb_cntrl,
     output reg [3:0] me_cntrl,
     output reg [3:0] ex_cntrl,
-    output reg [5:0] instr_id_srcs
+    output reg [6:0] instr_id_srcs
 );
 
 reg skipE, skipM, skipW, push, pop, wr;
