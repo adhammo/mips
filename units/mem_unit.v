@@ -1,19 +1,21 @@
-`include "memory/memory.v"
-
 module mem_unit (
-  input clk, wr, dirty, skip,
+  input clk,
+  input dirty, skip,
+  input wr,
   input [31:0] addr,
-  input [15:0] in,
-  output wire [15: 0] do
+  input [15:0] di,
+  output wire [15:0] do
 );
+
+  // Write Signal (protect and skip)
   wire write;
+  assign write = !dirty && !skip && wr;
 
-  //Memory  write logic
-  assign write = ~(wr & ~dirty & ~skip);
+  // Data Memory
+  memory #(.DATAWIDTH(16), .ADDRWIDTH(19)) data_memory(.clk(clk),
+                                                       .write(write),
+                                                       .addr(addr[19:1]),
+                                                       .in(di),
+                                                       .out(do));
 
-  //Memory
-  memory #(.DATAWIDTH(16), .ADDRWIDTH(19)) dataMemory(
-      .clk(clk), .enable(1'b0),
-      .write(write), .addr(addr[19:1]), 
-      .in(in), .out(do));
 endmodule

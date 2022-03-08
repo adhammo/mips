@@ -1,17 +1,20 @@
-module memory #(parameter DATAWIDTH = 16, parameter ADDRWIDTH = 20)(
-  input wire clk, write, enable,
-  input wire [ADDRWIDTH - 1:0] addr,
-  input wire [DATAWIDTH - 1:0] in,
-  output wire [DATAWIDTH - 1:0] out
+module memory #(parameter DATAWIDTH=8, parameter ADDRWIDTH=20)(
+  input clk, write,
+  input [ADDRWIDTH-1:0] addr,
+  input [DATAWIDTH-1:0] in,
+  output wire [DATAWIDTH-1:0] out
 );
 
-  reg [DATAWIDTH - 1: 0] mem[(2**ADDRWIDTH)-1:0];
-
   // Memory
+  reg [DATAWIDTH-1:0] mem[0:(2**ADDRWIDTH)-1];
+
+  // Async Read
+  assign out = mem[addr];
+
+  // Sync Write
   always @(posedge clk) begin
-    if(!write) 
-      mem[addr] <= in;  // write input (active-low)
+    if (write)
+      mem[addr] <= in;
   end
 
-  assign out = !enable? mem[addr] : {(16){1'bz}}; // enable output (active-low)
 endmodule

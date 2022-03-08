@@ -1,21 +1,21 @@
-`include "alsu/alsu.v"
 module exec_unit (
   input skip,
-  input [15:0] a, b,
   input [2:0] func,
-  output wire [15:0] ra,
-  output wire c, z, n
+  input [15:0] a, b,
+  output wire [15:0] r,
+  output wire z, n, c
 );
 
-  wire [15:0] r;
+  // Flags Output (reset flags if skip)
+  wire zo, no, co;
+  assign z = !skip ? zo : 1'b0;
+  assign n = !skip ? no : 1'b0;
+  assign c = !skip ? co : 1'b0;
 
-  // Exec output (skip)
-  assign ra = !skip ? r : a;
+  // ALU
+  alu alu(.func(func),
+          .a(a), .b(b),
+          .r(r),
+          .z(zo), .n(no), .c(co));
 
-  // ALSU
-  alsu alu(.a(a), .b(b),
-           .func(func),
-           .r(r),
-           .c(c), .z(z), .n(n));
-  
 endmodule

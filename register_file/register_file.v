@@ -1,4 +1,3 @@
-`include "registers/register_2oe.v"
 module register_file (
   input clk, rst,
   input write,
@@ -7,35 +6,25 @@ module register_file (
   output wire [15:0] rd1, rd2
 );
 
-  reg [7:0] loads;
-  reg [7:0] enables1;
-  reg [7:0] enables2;
+  integer i;
 
-  // Loads and enables decoders
-  always @(*) begin
-    // decode rd1 enable
-    enables1 = 8'b0;
-    enables1[rreg1] = 1'b1;
-    
-    // decode rd2 enable
-    enables2 = 8'b0;
-    enables2[rreg2] = 1'b1;
-    
-    // decode wd load
-    loads = 8'b0;
-    if (write)
-      loads[wreg] = 1'b1;
+  // Register File
+  reg [15:0] regfile[0:7];
+
+  // Async Read (with Forwarding)
+  assign rd1 = (write && rreg1 == wreg) ? wd : regfile[rreg1];
+  assign rd2 = (write && rreg2 == wreg) ? wd : regfile[rreg2];
+
+  // Sync Write and Async Reset
+  always @(posedge clk or negedge rst) begin
+    if (!rst) begin
+      // reset register file
+      for (i = 0; i < 8; i = i + 1)
+        regfile[i] <= 16'b0; 
+    end else if (write) begin
+      // write to register file
+      regfile[wreg] <= wd;
+    end
   end
-  
-  // Generate x8 16-bit registers
-  genvar i;
-  generate
-    for (i = 0; i < 8; i = i + 1) begin : gen_regi_2oe
-      register_2oe #(.WIDTH(16)) regi_2oe(.clk(clk), .rst(rst),
-                                          .load(loads[i]), .enable1(enables1[i]), .enable2(enables2[i]),
-                                          .in(wd), 
-                                          .out1(rd1), .out2(rd2));
-    end 
-  endgenerate
 
 endmodule

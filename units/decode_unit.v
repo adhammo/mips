@@ -1,15 +1,11 @@
-module decode_unit(
-    input wire [31:0] instr,
-    input wire [2:0] ex_rdst,
-    input wire enable, ex_ld,
-    output reg stallD
+module decode_unit (
+  input [31:0] instr,
+  output wire [6:0] opcode,
+  output wire [2:0] rdst, rsrc1, rsrc2,
+  output wire [15:0] imm
 );
 
-always @(*) begin
-    stallD <= 1'b0;
-    if(enable)
-        if(instr[6:0] == 7'b1011000 || instr[6:0] == 7'b01xxxxx)
-            if(ex_ld && (ex_rdst == instr[12:10] || ex_rdst == instr[15:13]))
-                stallD <= 1'b1; 
-end
+  // Instruction Extraction
+  assign {opcode, rdst, rsrc1, rsrc2, imm} = instr;
+
 endmodule

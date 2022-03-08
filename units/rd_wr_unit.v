@@ -1,4 +1,3 @@
-`include "register_file/register_file.v"
 module rd_wr_unit (
   input clk, rst,
   input skip, dirty,
@@ -7,10 +6,9 @@ module rd_wr_unit (
   output wire [15:0] rd1, rd2
 );
 
+  // Write Signal (protect and skip)
   wire write;
-
-  // Write signal (skip + protection)
-  assign write = !skip && !dirty;
+  assign write = !dirty && !skip;
 
   // Register File
   register_file regi_file(.clk(clk), .rst(rst),
