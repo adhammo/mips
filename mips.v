@@ -106,7 +106,7 @@ module mips (
     assign target = id_ex[31:0] + {{16{id_ex[82]}}, id_ex[82:67]} << 2; 
     //ALU sources muxes
     always @(fwd1, id_ex, wd, r_s1) begin
-        case(imm1)
+        case(id_ex[98])
         1'b0: begin
             case(fwd1)
             2'b00: s1 <= id_ex[50:35]; //Rd1
@@ -120,7 +120,7 @@ module mips (
         endcase
     end
     always @(fwd2, id_ex, wd, r_s1) begin
-        case(imm2)
+        case(id_ex[99])
         1'b0: begin
             case(fwd2)
             2'b00: s2 <= id_ex[66:51]; //Rd2
@@ -137,7 +137,7 @@ module mips (
     assign znc = !skipE? {z,n,c} : 3'b0;
     //Memory signals
     assign r_s1 = ex_me[88] ? ex_me[50:35] : ex_me[66:51];
-    assign addr = (ex_me[85] || ex_me[86])? sp : ex_me[66:51];
+    assign addr = (ex_me[85] || ex_me[86])?  (ex_me[86]? sp + 32'd2 : sp): ex_me[66:51];
     //SP input mux
     assign sp_in = ex_me[85]? sp - 2'd2 : sp + 2'd2;
     //WB output mux
