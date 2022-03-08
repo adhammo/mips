@@ -1,3 +1,4 @@
+`timescale 1ns/1ps
 `include "registers/register.v"
 `include "register_file/register_file.v"
 `include "logic/flags.v"
@@ -10,9 +11,10 @@
 `include "units/mem_unit.v"
 
 module mips (
-    input wire clk, rst
+  //  input wire clk, rst
 );
-    wire keepF, keepD, keepE, keepM, dirtyE, dirtyW;
+    reg clk, rst;
+    reg keepF, keepD, keepE, keepM, dirtyE, dirtyW;
     wire jump;
     wire [31:0] pc, pc_in, target, pc_plus4
                 , sp, sp_in;
@@ -42,36 +44,51 @@ module mips (
     wire [15:0] r, do, wd;
     wire [31:0] addr;
 
+    initial begin
+        dirtyE = 1'b0;
+        dirtyW = 1'b0;
+        keepF  = 1'b0;
+        keepD  = 1'b0;
+        keepE  = 1'b0;
+        keepM  = 1'b0;
+        rst   = 1'b0;
+        clk  = 1'b0;
+        #200 
+        rst = 1'b1;
+    end
+
+    always #100 clk <= ~clk;
+
     //Fetch Stage Instantiation
     register #(.WIDTH(32)) PC(.clk(clk), .rst(rst), .load(~keepF), 
                 .in(pc_in), .out(pc));
     fetch_unit FU(.clk(clk), .pc(pc), .instr(instr)); 
     register  #(.WIDTH(64)) IF_ID(.clk(clk), .rst(rst), .load(~keepD),
-                .in({pc, instr}), .out(if_id));
+                .in({instr, pc}), .out(if_id));
     //Decode Stage Instantiation
     decode_unit DU(.instr(instrD), .ex_rdst(id_ex[34:32]), .enable(~dirtyE), 
                 .ex_ld(id_ex[100]), .stallD(stallD));
     register_file RegFile(.clk(clk), .rst(rst), .wd(wd),
                 .wreg(me_wb[34:32]), .rreg1(instrD[12:10]), .rd1(rData1),
                 .rreg2(instrD[15:13]), .rd2(rData2), .write(~me_wb[67] & ~dirtyW));
-    control_unit CU(.opcode(instrD[6:0]), .wb_cntrl(skipW), .me_cntrl({skipM, push, pop, wr}),
-                    .ex_cntrl({skipE, func}), .instr_id_srcs({imm1, imm2, load, setC, branch}));
+    control_unit CU(.opcode(instrD[6:0]), .wb_cntrl(skipW), .me_cntrl({wr, pop, push, skipM}),
+                    .ex_cntrl({func, skipE}), .instr_id_srcs({branch, setC, load, imm2, imm1}));
 
     register  #(.WIDTH(105)) ID_EX(.clk(clk), .rst(rst), .load(~keepE),
-                .in({if_id[31:0], instrD[9:7], rData1, rData2, instrD[15:0], skipW, skipM, push, pop, wr,
-                skipE, func, instrD[12:10], instrD[15:13],
-                imm1, imm2, load, setC, branch}), .out(id_ex));
+                .in({branch, setC, load, imm2, imm1, rsrc2, rsrc1, func, skipE, wr,
+                pop, push, skipM, skipW,
+                instrD[15:0], rData2, rData1, instrD[9:7], if_id[31:0]}), .out(id_ex));
     //Execute Stage Instantiation
     exec_unit EU(.skip(id_ex[88]), .a(a), .b(b), .func(id_ex[91:89]), 
                 .ra(r), .c(c), .n(n),  .z(z));
     flags FlagRegister(.clk(clk), .ld(~dirtyE), .sc(id_ex[101]), .znc(znc), .z(ZF), .n(NF), .c(CF));
-    forward_unit FwdU(.en_me(dirtyM), .en_wb(dirtyW), .rsrc1(id_ex[94:92]), .rsrc2(id_ex[97:95]),
+    forward_unit FwdU(.en_me(~dirtyM), .en_wb(~dirtyW), .rsrc1(id_ex[94:92]), .rsrc2(id_ex[97:95]),
                 .me_rdst(ex_me[34:32]), .wb_rdst(me_wb[34:32]), .fwd1(fwd1), .fwd2(fwd2));
     branch_unit BU(.enable(~dirtyE), .z(ZF), .n(NF), .c(CF),
-                .jump(jump), .branch(branch));
+                .jump(jump), .branch(id_ex[104:102]));
     
     register  #(.WIDTH(89)) EX_ME(.clk(clk), .rst(rst), .load(~keepM),
-                .in({id_ex[34:0], s1, r, s2, id_ex[88:83]}), .out(ex_me)); 
+                .in({id_ex[88:83], s2, r, s1, id_ex[34:0]}), .out(ex_me)); 
     //Memory Stage Instantiation    
     mem_unit MU(.clk(clk), .wr(ex_me[87]), .dirty(dirtyM), .skip(ex_me[84]),
             .addr(addr), .in(ex_me[82:67]), .do(do));
@@ -79,11 +96,11 @@ module mips (
             .load((ex_me[85] || ex_me[86]) && !(dirtyM || ex_me[84])), 
             .in(sp_in), .out(sp));
     register  #(.WIDTH(69)) ME_WB(.clk(clk), .rst(rst), .load(~keepW),
-                .in({ex_me[34:0], r_s1, do, ex_me[83], ex_me[84]}), .out(me_wb)); 
+                .in({ex_me[84:83], do, r_s1, ex_me[34:0]}), .out(me_wb)); 
 
 
     //PC input mux
-    assign pc_in = jump? target : pc + 3'd4;
+    assign pc_in = jump? target : pc + 32'd4;
     //IF_ID register
     assign instrD = if_id[63:32];
     //Branch target

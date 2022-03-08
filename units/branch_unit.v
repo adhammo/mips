@@ -5,6 +5,7 @@ module branch_unit (
 );
 
 always @(*) begin
+    jump <= 1'b0;
     if(!enable) begin
         case(branch)
         3'b0xx: jump <= 1'b0;

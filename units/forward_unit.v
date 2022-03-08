@@ -6,14 +6,14 @@ module forward_unit (
 );
     
 always @(*) begin
-    if((rsrc1 == me_rdst) && !en_me)
+    if((rsrc1 == me_rdst) && en_me)
         fwd1 <= 2'b01;
     else if((rsrc1 == wb_rdst) && !en_wb)
         fwd1 <= 2'b10;
     else
         fwd1 <= 2'b00;
 
-    if((rsrc2 == me_rdst) && !en_me)
+    if((rsrc2 == me_rdst) && en_me)
         fwd2 <= 2'b01;
     else if((rsrc2 == wb_rdst) && !en_wb)
         fwd2 <= 2'b10;

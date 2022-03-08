@@ -14,6 +14,6 @@ module mem_unit (
   //Memory
   memory #(.DATAWIDTH(16), .ADDRWIDTH(19)) dataMemory(
       .clk(clk), .enable(1'b0),
-      .write(write), .addr(addr[18:0]), 
+      .write(write), .addr(addr[19:1]), 
       .in(in), .out(do));
 endmodule
