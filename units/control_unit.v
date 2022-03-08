@@ -26,14 +26,14 @@ always @(*) begin
     load <= 1'b0;
     branch <= 3'b0xx;
 
-    case(opcode)
+    casex(opcode)
     7'b0001100:  setC <= 1'b1; //SETC
     7'b0010100:  imm1 <= 1'b0; //OUT
-    7'b01xxxxx: begin // ALU instructions
+    7'b010xxxx: begin // ALU instructions
         skipE <= 1'b0;
         skipW <= 1'b0;
         imm1  <= 1'b0;
-        case(opcode[3:0])
+        casex(opcode[3:0])
         4'd0: begin
             func <= 3'd0; //ADD
             imm2 <= 1'b0;
@@ -110,6 +110,6 @@ always @(*) begin
     wb_cntrl <= skipW;
     me_cntrl <= {wr, pop, push, skipM};
     ex_cntrl <= {func, skipE};
-    instr_id_srcs <= {branch, setC, load};
+    instr_id_srcs <= {branch, setC, load, imm2, imm1};
 end
 endmodule

@@ -32,13 +32,12 @@ module mips (
     wire [15:0] rData1, rData2;
     //CU signals
     wire skipW, skipM, skipE, push, pop, wr, imm1, imm2, load, setC;
-    wire [2:0] func;
-    wire [2:0] branch;
+    wire [2:0] func, branch;
     //EU & ME signals
     wire z,n,c;
     wire ZF, NF, CF;
-    wire [1:0] fwd1, fwd2;
     wire [2:0] znc;
+    wire [1:0] fwd1, fwd2;
     reg  [15:0] a, b, s1, s2;
     wire [15:0] r_s1;
     wire [15:0] r, do, wd;
@@ -51,10 +50,10 @@ module mips (
         keepD  = 1'b0;
         keepE  = 1'b0;
         keepM  = 1'b0;
-        rst   = 1'b0;
-        clk  = 1'b0;
+        rst    = 1'b0;
+        clk    = 1'b0;
         #200 
-        rst = 1'b1;
+        rst    = 1'b1;
     end
 
     always #100 clk <= ~clk;
@@ -75,7 +74,7 @@ module mips (
                     .ex_cntrl({func, skipE}), .instr_id_srcs({branch, setC, load, imm2, imm1}));
 
     register  #(.WIDTH(105)) ID_EX(.clk(clk), .rst(rst), .load(~keepE),
-                .in({branch, setC, load, imm2, imm1, rsrc2, rsrc1, func, skipE, wr,
+                .in({branch, setC, load, imm2, imm1, instrD[15:13], instrD[12:10], func, skipE, wr,
                 pop, push, skipM, skipW,
                 instrD[15:0], rData2, rData1, instrD[9:7], if_id[31:0]}), .out(id_ex));
     //Execute Stage Instantiation
