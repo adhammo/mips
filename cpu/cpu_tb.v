@@ -1,10 +1,13 @@
+`timescale 10ns/1ns
 module cpu_tb;
 
   reg clk, rst;
 
+  cpu cpu (.clk(clk), .rst(rst));
+
   initial begin
     // load test code
-    // $readmemh("../tests/counter.txt", cpu.fetch_unit.instr_memory.mem); 
+    $readmemh("../tests/counter.txt", cpu.fetch_unit.instr_memory.mem); 
 
     // init
     clk = 1'b0;

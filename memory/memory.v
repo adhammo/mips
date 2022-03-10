@@ -13,8 +13,7 @@ module memory #(parameter DATAWIDTH=8, parameter ADDRWIDTH=20)(
 
   // Sync Write
   always @(posedge clk) begin
-    if (write)
-      mem[addr] <= in;
+    if (write) mem[addr] <= in; // write to memory
   end
 
 endmodule

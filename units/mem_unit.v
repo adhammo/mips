@@ -12,10 +12,10 @@ module mem_unit (
   assign write = !dirty && !skip && wr;
 
   // Data Memory
-  memory #(.DATAWIDTH(16), .ADDRWIDTH(19)) data_memory(.clk(clk),
-                                                       .write(write),
-                                                       .addr(addr[19:1]),
-                                                       .in(di),
-                                                       .out(do));
+  memory #(.DATAWIDTH(16), .ADDRWIDTH(19)) data_memory (.clk(clk),
+                                                        .write(write),
+                                                        .addr(addr[19:1]),
+                                                        .in(di),
+                                                        .out(do));
 
 endmodule

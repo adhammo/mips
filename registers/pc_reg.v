@@ -17,9 +17,9 @@ module pc_reg (
   end
 
   // PC Register
-  register #(.WIDTH(32)) pc_regi(.clk(clk), .rst(rst),
-                                 .load(!keep),
-                                 .in(pc_in),
-                                 .out(pc));
-
+  register #(.WIDTH(32)) pc_regi (.clk(clk), .rst(rst),
+                                  .load(!keep),
+                                  .in(pc_in),
+                                  .out(pc));
+ 
 endmodule

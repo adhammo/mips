@@ -13,9 +13,9 @@ module exec_unit (
   assign c = !skip ? co : 1'b0;
 
   // ALU
-  alu alu(.func(func),
-          .a(a), .b(b),
-          .r(r),
-          .z(zo), .n(no), .c(co));
+  alu alu (.func(func),
+           .a(a), .b(b),
+           .r(r),
+           .z(zo), .n(no), .c(co));
 
 endmodule

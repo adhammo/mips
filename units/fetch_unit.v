@@ -5,10 +5,10 @@ module fetch_unit (
 );
 
   // Instruction Memory
-  memory #(.DATAWIDTH(32), .ADDRWIDTH(18)) instr_memory(.clk(clk),
-                                                        .write(1'b0),
-                                                        .addr(pc[19:2]),
-                                                        .in(32'd0),
-                                                        .out(instr));
+  memory #(.DATAWIDTH(32), .ADDRWIDTH(18)) instr_memory (.clk(clk),
+                                                         .write(1'b0),
+                                                         .addr(pc[19:2]),
+                                                         .in(32'd0),
+                                                         .out(instr));
 
 endmodule

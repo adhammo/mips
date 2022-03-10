@@ -5,7 +5,7 @@ module register #(parameter WIDTH=8, parameter RSTVAL=1'b0) (
   output reg [WIDTH-1:0] out
 );
 
-  // Register (with Async Reset)
+  // Sync Write and Async Reset
   always @(posedge clk or negedge rst) begin
     if (!rst) out <= {WIDTH{RSTVAL}}; // reset register
     else if (load) out <= in;         // write to register

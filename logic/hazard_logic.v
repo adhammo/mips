@@ -10,7 +10,7 @@ module hazard_logic (
   always @(*) begin
     if (ex_valid && ex_load && (rsrc1 == ex_rdst || rsrc2 == ex_rdst)) begin
       // stall decode (if needed)
-      case (opcode)
+      casez (opcode)
         7'b0100101: stallD = 1'b1; // AND
         7'b0100110: stallD = 1'b1; // ORR
         7'b0100111: stallD = 1'b1; // NOT
@@ -20,8 +20,8 @@ module hazard_logic (
         7'b0100010: stallD = 1'b1; // INC
         7'b0100011: stallD = 1'b1; // SHL
         7'b0100100: stallD = 1'b1; // SHR
-        7'b1000000: stallD = 1'b1; // PUSH
-        7'b1011000: stallD = 1'b1; // STD
+        7'b1000???: stallD = 1'b1; // PUSH
+        7'b1011???: stallD = 1'b1; // STD
         default: stallD = 1'b0;
       endcase
     end else

@@ -1,5 +1,5 @@
 module branch_logic (
-  input enable,
+  input valid,
   input z, n, c,
   input [2:0] branch,
   output reg jump
@@ -11,7 +11,7 @@ module branch_logic (
   parameter  JC = 3'b111;
 
   always @(*) begin
-    if (enable) begin
+    if (valid) begin
       // calculate jump
       case (branch)
         JMP: jump = 1'b1;

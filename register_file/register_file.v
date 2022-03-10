@@ -11,7 +11,7 @@ module register_file (
   // Register File
   reg [15:0] regfile[0:7];
 
-  // Async Read (with Forwarding)
+  // Async Read (with forwarding)
   assign rd1 = (write && rreg1 == wreg) ? wd : regfile[rreg1];
   assign rd2 = (write && rreg2 == wreg) ? wd : regfile[rreg2];
 
@@ -20,7 +20,7 @@ module register_file (
     if (!rst) begin
       // reset register file
       for (i = 0; i < 8; i = i + 1)
-        regfile[i] <= 16'b0; 
+        regfile[i] <= 16'b0;
     end else if (write) begin
       // write to register file
       regfile[wreg] <= wd;

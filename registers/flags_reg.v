@@ -1,4 +1,4 @@
-module flags (
+module flags_reg (
   input clk, rst,
   input enable,
   input sc,
@@ -15,9 +15,9 @@ module flags (
   assign flags_in = {zi, ni, sc || ci}; // combine flags
 
   // Flags Register
-  register #(.WIDTH(3)) flags_regi(.clk(clk), .rst(rst),
-                                   .load(enable),
-                                   .in(flags_in),
-                                   .out(flags_out));
+  register #(.WIDTH(3)) flags_regi (.clk(clk), .rst(rst),
+                                    .load(enable),
+                                    .in(flags_in),
+                                    .out(flags_out));
 
 endmodule

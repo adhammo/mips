@@ -1,4 +1,4 @@
-module alsu (
+module alu (
   input [2:0] func,
   input [15:0] a, b,
   output reg [15:0] r,

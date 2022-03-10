@@ -1,176 +1,301 @@
-module mips;
+module cpu (
+  input clk, rst
+);
 
- initial begin
-    $readmemh("testCode.txt",instrMemory.mem); 
+  // ##### Parameters #####
+  // Forward
+  parameter NOF = 2'b00;
+  parameter MEF = 2'b01;
+  parameter WBF = 2'b10;
+
+  // ##### Signals #####
+
+  // Keep and Dirty
+  wire keepF, keepD, keepE, keepM, keepW;
+  wire dirtyF, dirtyD, dirtyE, dirtyM, dirtyW;
+
+  // ===== Fetch =====
+  // -- Inputs
+  wire [31:0] pc;
+  
+  // -- Outputs
+  // Fetch
+  wire [31:0] instr;
+
+  // ===== Decode ====
+  // -- Inputs
+  wire [31:0] id_pc, id_instr;
+
+  // -- Outputs
+  // Decode
+  wire [6:0] opcode;
+  wire [2:0] rdst, rsrc1, rsrc2;
+  wire [15:0] imm;
+  // Register File
+  wire [15:0] rd1, rd2;
+  // Control
+  wire [2:0] branch;
+  wire setC, load;
+  wire imm1, imm2;
+  wire skipE;
+  wire [2:0] func;
+  wire skipM, push, pop, wr;
+  wire skipW;
+  // Hazard
+  wire stallD;
+
+  // ===== Exec ======
+  // -- Inputs
+  wire [31:0] ex_pc;
+  wire [2:0] ex_rdst, ex_rsrc1, ex_rsrc2;
+  wire [15:0] ex_rd1, ex_rd2, ex_imm;
+  wire [2:0] ex_branch;
+  wire ex_setC, ex_load;
+  wire ex_imm1, ex_imm2;
+  wire ex_skipE;
+  wire [2:0] ex_func;
+  wire ex_skipM, ex_push, ex_pop, ex_wr;
+  wire ex_skipW;
+
+  // -- Flags Register Output
+  wire z, n, c;
+
+  // -- Outputs
+  // Forward
+  wire [1:0] fwd1, fwd2;
+  reg [15:0] s1, s2;
+  // ALU
+  wire [15:0] r;
+  wire zo, no, co;
+  // Branch
+  wire jump;
+  wire [31:0] target;
+
+  // ===== Memory ====
+  // -- Inputs
+  wire [31:0] me_pc;
+  wire [2:0] me_rdst;
+  wire [15:0] me_s1, me_r, me_s2;
+  wire me_skipE;
+  wire me_skipM, me_push, me_pop, me_wr;
+  wire me_skipW;
+
+  // -- SP Register Output
+  wire [31:0] sp;
+
+  // -- Outputs
+  // Skip Execute
+  wire [15:0] r_s1;
+  // Memory
+  wire [15:0] do;
+
+  // ===== Write =====
+  // -- Inputs
+  wire [31:0] wb_pc;
+  wire [2:0] wb_rdst;
+  wire [15:0] wb_r_s1, wb_do;
+  wire wb_skipM;
+  wire wb_skipW;
+
+  // -- Outputs
+  // Write Data
+  wire [15:0] wd;
+
+  // ##### Stages #####
+  
+  // ===== Fetch =====
+  // PC Register
+  pc_reg pc_reg (.clk(clk), .rst(rst),
+                 .keep(keepF),
+                 .jump(jump),
+                 .target(target),
+                 .pc(pc));
+
+  // Fetch Unit
+  fetch_unit fetch_unit (.clk(clk),
+                         .pc(pc),
+                         .instr(instr));
+
+  // ===== Decode ====
+
+  // IF/ID Register
+  wire [63:0] if_id_in, if_id_out;
+  assign if_id_in = {instr, pc}; 
+  assign {id_instr, id_pc} = if_id_out; 
+  stage_reg #(.WIDTH(64)) if_id_reg (.clk(clk), .rst(rst),
+                                     .keep(keepD),
+                                     .in(if_id_in),
+                                     .out(if_id_out));
+
+  // Decode Unit
+  decode_unit decode_unit (.instr(id_instr),
+                           .opcode(opcode),
+                           .rdst(rdst), .rsrc1(rsrc1), .rsrc2(rsrc2),
+                           .imm(imm));
+
+  // Read/Write Unit
+  rd_wr_unit rd_wr_unit (.clk(clk), .rst(rst),
+                         .dirty(dirtyW), .skip(wb_skipW),
+                         .wreg(wb_rdst), .rreg1(rsrc1), .rreg2(rsrc2),
+                         .wd(wd),
+                         .rd1(rd1), .rd2(rd2));
+
+  // Control Logic
+  control_logic control_logic (.opcode(opcode),
+                               .branch(branch),
+                               .setC(setC), .load(load),
+                               .imm1(imm1), .imm2(imm2),
+                               .skipE(skipE),
+                               .func(func),
+                               .skipM(skipM), .push(push), .pop(pop), .wr(wr),
+                               .skipW(skipW));
+
+  // Stall Decode
+  wire stallD_i;
+  reg stallD_c;
+  assign stallD = stallD_i && !stallD_c;
+  always @(posedge clk) begin
+    if (stallD_i) stallD_c <= 1'b1;
+    else stallD_c <= 1'b0;
   end
 
-    reg clk, rst;
-    
-    reg keepF, keepD, keepE, keepM, keepW;
-    reg dirtyF, dirtyD, dirtyE, dirtyM, dirtyW;
-    
-    wire jump;
-    wire [31:0] pc, pc_in, target, pc_plus4, sp, sp_in;
-    wire [31:0] instr, instrD;
+  // Hazard Logic
+  hazard_logic hazard_logic (.ex_valid(!dirtyE),
+                             .ex_load(ex_load),
+                             .opcode(opcode),
+                             .rsrc1(rsrc1), .rsrc2(rsrc2),
+                             .ex_rdst(ex_rdst),
+                             .stallD(stallD_i));
 
-    wire stallD;
-    
-    //pipeline registers
-    wire [63:0] if_id;
-    wire [104:0] id_ex;
-    wire [88:0] ex_me;
-    wire [68:0] me_wb;
-    
-    //
-    wire [2:0] ex_rdst;
-    wire ex_load;
-    //WB signals
-    wire [15:0] rData1, rData2;
-    //CU signals
-    wire skipW, skipM, skipE, push, pop, wr, imm1, imm2, load, setC;
-    wire [2:0] func, branch;
-    //EU & ME signals
-    wire z,n,c;
-    wire ZF, NF, CF;
-    wire [2:0] znc;
-    wire [1:0] fwd1, fwd2;
-    reg  [15:0] a, b, s1, s2;
-    wire [15:0] r_s1;
-    wire [15:0] r, do, wd;
-    wire [31:0] addr;
+  // ===== Exec ======
 
-    initial begin
-      dirtyF = 1'b1;
-      dirtyD = 1'b1;
-      dirtyE = 1'b1;
-      dirtyW = 1'b1;
-      dirtyM = 1'b1;
+  // ID/EX Register
+  wire [104:0] id_ex_in, id_ex_out;
+  assign id_ex_in = {branch, setC, load, imm1, imm2, rsrc1, rsrc2,
+                     skipE, func, skipM, push, pop, wr, skipW,
+                     imm, rd2, rd1, rdst, id_pc}; 
+  assign {ex_branch, ex_setC, ex_load, ex_imm1, ex_imm2, ex_rsrc1, ex_rsrc2,
+          ex_skipE, ex_func, ex_skipM, ex_push, ex_pop, ex_wr, ex_skipW,
+          ex_imm, ex_rd2, ex_rd1, ex_rdst, ex_pc} = id_ex_out; 
+  stage_reg #(.WIDTH(105)) id_ex_reg (.clk(clk), .rst(rst),
+                                      .keep(keepE),
+                                      .in(id_ex_in),
+                                      .out(id_ex_out));
 
-      keepF  = 1'b0;
-      keepD  = 1'b0;
-      keepE  = 1'b0;
-      keepM  = 1'b0;
-      keepW  = 1'b0;
+  // Forward Logic
+  forward_logic forward_logic (.me_valid(!(dirtyM || me_skipW)), .wb_valid(!(dirtyW || wb_skipW)),
+                               .rsrc1(ex_rsrc1), .rsrc2(ex_rsrc2),
+                               .me_rdst(me_rdst), .wb_rdst(wb_rdst),
+                               .fwd1(fwd1), .fwd2(fwd2));
 
-      rst    = 1'b0;
-      clk    = 1'b0;
-
-      #200 
-      rst    = 1'b1;
+  // Sources
+  always @(*) begin
+    // calculate s1
+    if (ex_imm1)
+      s1 = ex_imm;
+    else begin
+      case (fwd1)
+        NOF: s1 = ex_rd1;
+        MEF: s1 = r_s1;
+        WBF: s1 = wd;
+        default: s1 = ex_rd1;
+      endcase
     end
 
-    always #100 clk = ~clk;
+    // calculate s2
+    case (fwd2)
+      NOF: s2 = ex_rd2;
+      MEF: s2 = r_s1;
+      WBF: s2 = wd;
+      default: s2 = ex_rd2;
+    endcase
+  end
 
+  // ALU Inputs
+  wire [15:0] a, b;
+  assign a = s1;
+  assign b = ex_imm2 ? ex_imm : s2;
 
+  // Execute Unit
+  exec_unit exec_unit (.skip(ex_skipE),
+                       .func(ex_func),
+                       .a(a), .b(b),
+                       .r(r),
+                       .z(zo), .n(no), .c(co));
 
-    //Fetch Stage Instantiation
-    register #(.WIDTH(32)) PC(.clk(clk), .rst(rst), .load(!keepF), 
-                              .in(pc_in), .out(pc));
+  // Flags Register
+  flags_reg flags_reg (.clk(clk), .rst(rst),
+                       .enable(!dirtyE),
+                       .sc(ex_setC),
+                       .zi(zo), .ni(no), .ci(co),
+                       .z(z), .n(n), .c(c));
 
-    fetch_unit FU(.clk(clk), .pc(pc), .instr(instr));
+  // Target Address
+  assign target = ex_pc + ({{16{ex_imm[15]}}, ex_imm} << 2); 
 
+  // Branch Logic
+  branch_logic branch_logic (.valid(!dirtyE),
+                             .z(z), .n(n), .c(c),
+                             .branch(ex_branch),
+                             .jump(jump));
 
+  // ===== Memory ====
 
-    register  #(.WIDTH(64)) IF_ID(.clk(clk), .rst(rst), .load(!keepD),
-                                  .in({instr, pc}), .out(if_id));
+  // EX/ME Register
+  wire [88:0] ex_me_in, ex_me_out;
+  assign ex_me_in = {ex_skipE, ex_skipM, ex_push, ex_pop, ex_wr, ex_skipW,
+                     s2, r, s1, ex_rdst, ex_pc}; 
+  assign {me_skipE, me_skipM, me_push, me_pop, me_wr, me_skipW,
+          me_s2, me_r, me_s1, me_rdst, me_pc} = ex_me_out; 
+  stage_reg #(.WIDTH(89)) ex_me_reg (.clk(clk), .rst(rst),
+                                     .keep(keepM),
+                                     .in(ex_me_in),
+                                     .out(ex_me_out));
 
-    //Decode Stage Instantiation
-    // decode_unit DU(.instr(instrD), .ex_rdst(id_ex[34:32]), .enable(!dirtyE), 
-    //             .ex_ld(id_ex[100]), .stallD(stallD));
-                
-    register_file RegFile(.clk(clk), .rst(rst), .wd(wd),
-                          .wreg(me_wb[34:32]), .rreg1(instrD[12:10]), .rd1(rData1),
-                          .rreg2(instrD[15:13]), .rd2(rData2), .write(!me_wb[67] & !dirtyW));
+  // SP Register
+  sp_reg sp_reg (.clk(clk), .rst(rst),
+                 .enable(!(dirtyE || me_skipM)),
+                 .push(me_push), .pop(me_pop),
+                 .sp(sp));
 
+  // Memory Address
+  wire [31:0] addr;
+  assign addr = push || pop ? sp : {16'b0, me_r};
 
+  // Memory Unit
+  mem_unit mem_unit (.clk(clk),
+                     .dirty(dirtyM), .skip(me_skipM),
+                     .wr(me_wr),
+                     .addr(addr),
+                     .di(me_s2),
+                     .do(do));
 
-    control_unit CU(.opcode(instrD[6:0]), .wb_cntrl(skipW), .me_cntrl({wr, pop, push, skipM}),
-                    .ex_cntrl({func, skipE}), .instr_id_srcs({branch, setC, load, imm2, imm1}));
+  // Skip Execute
+  assign r_s1 = me_skipE ? me_s1 : me_r;
 
-    register  #(.WIDTH(105)) ID_EX(.clk(clk), .rst(rst), .load(!keepE),
-                .in({branch, setC, load, imm2, imm1, instrD[15:13], instrD[12:10], func, skipE, wr,
-                pop, push, skipM, skipW,
-                instrD[15:0], rData2, rData1, instrD[9:7], if_id[31:0]}), .out(id_ex));
-    
+  // ===== Write =====
 
+  // ME/WB Register
+  wire [68:0] me_wb_in, me_wb_out;
+  assign me_wb_in = {me_skipM, me_skipW,
+                     do, r_s1, me_rdst, me_pc}; 
+  assign {wb_skipM, wb_skipW,
+          wb_do, wb_r_s1, wb_rdst, wb_pc} = me_wb_out; 
+  stage_reg #(.WIDTH(69)) me_wb_reg (.clk(clk), .rst(rst),
+                                     .keep(keepW),
+                                     .in(me_wb_in),
+                                     .out(me_wb_out));
 
-    //Execute Stage Instantiation
-    exec_unit EU(.a(a), .b(b), .func(id_ex[91:89]), 
-                 .r(r), .c(c), .n(n),  .z(z));
+  // Write Data
+  assign wd = skipM ? wb_r_s1 : wb_do;
 
-    flags FlagRegister(.clk(clk), .ld(!dirtyE), .sc(id_ex[101]), .znc(znc), .z(ZF), .n(NF), .c(CF));
+  // ==== Pipeline ====
 
-    forward_unit FwdU(.en_me(!dirtyM), .en_wb(!dirtyW), .rsrc1(id_ex[94:92]), .rsrc2(id_ex[97:95]),
-                .me_rdst(ex_me[34:32]), .wb_rdst(me_wb[34:32]), .fwd1(fwd1), .fwd2(fwd2));
-
-    branch_unit BU(.enable(!dirtyE), .z(ZF), .n(NF), .c(CF),
-                .jump(jump), .branch(id_ex[104:102]));
-    
-
-
-    register  #(.WIDTH(89)) EX_ME(.clk(clk), .rst(rst), .load(~keepM),
-                .in({id_ex[88:83], s2, r, s1, id_ex[34:0]}), .out(ex_me)); 
-    //Memory Stage Instantiation    
-    mem_unit MU(.clk(clk), .wr(ex_me[87]), .dirty(dirtyM), .skip(ex_me[84]),
-            .addr(addr), .di(ex_me[82:67]), .do(do));
-    register #(.WIDTH(32)) SP(.clk(clk), .rst(rst),
-            .load((ex_me[85] || ex_me[86]) && !(dirtyM || ex_me[84])), 
-            .in(sp_in), .out(sp));
-    register  #(.WIDTH(69)) ME_WB(.clk(clk), .rst(rst), .load(!keepW),
-                .in({ex_me[84:83], do, r_s1, ex_me[34:0]}), .out(me_wb)); 
-
-    always @(posedge clk) begin
-      dirtyF <= 1'b0;
-      dirtyD <= dirtyF;
-      dirtyE <= dirtyD;
-      dirtyM <= dirtyE;
-      dirtyW <= dirtyM;
-    end
-
-    //PC input mux
-    assign pc_in = jump? target : (pc + 32'd4);
-    //IF_ID register
-    assign instrD = if_id[63:32];
-    //Branch target
-    assign target = id_ex[31:0] + {{16{id_ex[82]}}, id_ex[82:67]} << 2; 
-    //ALU sources muxes
-    always @(fwd1, id_ex, wd, r_s1) begin
-        case(id_ex[98])
-        1'b0: begin
-            case(fwd1)
-            2'b00: s1 = id_ex[50:35]; //Rd1
-            2'b01: s1 = r_s1; //R/S1 
-            2'b10: s1 = wd; //R/S1 
-            2'b11: s1 = id_ex[50:35]; //Rd1 
-            endcase
-            a = s1;
-        end
-        1'b1: a = id_ex[82:67]; // Imm/Off
-        endcase
-    end
-    always @(fwd2, id_ex, wd, r_s1) begin
-        case(id_ex[99])
-        1'b0: begin
-            case(fwd2)
-            2'b00: s2 = id_ex[66:51]; //Rd2
-            2'b01: s2 = r_s1; //R/S1 
-            2'b10: s2 = wd; //R/S1 
-            2'b11: s2 = id_ex[66:51]; //Rd2
-            endcase
-            b = s2;
-        end
-        1'b1: b = id_ex[82:67];
-        endcase
-    end
-    //ZNC signals
-    assign znc = !skipE? {z,n,c} : 3'b0;
-    //Memory signals
-    assign r_s1 = ex_me[88] ? ex_me[50:35] : ex_me[66:51];
-    assign addr = (ex_me[85] || ex_me[86])?  (ex_me[86]? sp + 32'd2 : sp): ex_me[66:51];
-    //SP input mux
-    assign sp_in = ex_me[85]? sp - 2'd2 : sp + 2'd2;
-    //WB output mux
-    assign wd = me_wb[68]? me_wb[50:34] : me_wb[66:51];
-
+  // Pipeline Unit
+  pipe_unit pipe_unit (.clk(clk), .rst(rst),
+                       .stall({1'b0, stallD, 1'b0, 1'b0, 1'b0}),
+                       .flush({1'b0, jump, 1'b0, 1'b0, 1'b0}),
+                       .keep({keepF, keepD, keepE, keepM, keepW}),
+                       .dirty({dirtyF, dirtyD, dirtyE, dirtyM, dirtyW}));
 
 endmodule
