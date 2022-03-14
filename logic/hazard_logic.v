@@ -27,7 +27,7 @@ module hazard_logic (
       end else if (rsrc1 == ex_rdst) begin
         // needs only first source
         casez (opcode)
-          7'b00101??: stallD = 1'b1; // OUT
+          7'b00100??: stallD = 1'b1; // OUT
           7'b0100111: stallD = 1'b1; // NOT
           7'b0100010: stallD = 1'b1; // INC
           7'b0100011: stallD = 1'b1; // SHL
