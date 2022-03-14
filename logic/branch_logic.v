@@ -11,6 +11,10 @@ module branch_logic (
   parameter  JC = 3'b111;
 
   always @(*) begin
+    // default: no jump
+    jump = 1'b0;
+    
+    // check if branch
     if (valid) begin
       // calculate jump
       case (branch)
@@ -20,8 +24,7 @@ module branch_logic (
         JC: jump = c;
         default: jump = 1'b0;
       endcase
-    end else
-      jump = 1'b0;
+    end
   end
 
 endmodule

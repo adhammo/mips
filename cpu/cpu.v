@@ -2,12 +2,6 @@ module cpu (
   input clk, rst
 );
 
-  // ##### Parameters #####
-  // Forward
-  parameter NOF = 2'b00;
-  parameter MEF = 2'b01;
-  parameter WBF = 2'b10;
-
   // ##### Signals #####
 
   // Keep and Dirty
@@ -195,18 +189,16 @@ module cpu (
       s1 = ex_imm;
     else begin
       case (fwd1)
-        NOF: s1 = ex_rd1;
-        MEF: s1 = r_s1;
-        WBF: s1 = wd;
+        2'b10: s1 = r_s1;
+        2'b11: s1 = wd;
         default: s1 = ex_rd1;
       endcase
     end
 
     // calculate s2
     case (fwd2)
-      NOF: s2 = ex_rd2;
-      MEF: s2 = r_s1;
-      WBF: s2 = wd;
+      2'b10: s2 = r_s1;
+      2'b11: s2 = wd;
       default: s2 = ex_rd2;
     endcase
   end

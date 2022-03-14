@@ -6,25 +6,25 @@ module forward_logic (
 );
 
   parameter NOF = 2'b00;
-  parameter MEF = 2'b01;
-  parameter WBF = 2'b10;
+  parameter MEF = 2'b10;
+  parameter WBF = 2'b11;
 
   always @(*) begin
-    // calculate forward for Rsrc1
+    // default: no forward
+    fwd1 = NOF;
+    fwd2 = NOF;
+
+    // calculate forward for rsrc1
     if (me_valid && rsrc1 == me_rdst)
       fwd1 = MEF;
     else if (wb_valid && rsrc1 == wb_rdst)
       fwd1 = WBF;
-    else
-      fwd1 = NOF;
 
     // calculate forward for Rsrc2
     if (me_valid && rsrc2 == me_rdst)
       fwd2 = MEF;
     else if (wb_valid && rsrc2 == wb_rdst)
       fwd2 = WBF;
-    else
-      fwd2 = NOF;
   end
 
 endmodule
