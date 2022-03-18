@@ -1,5 +1,7 @@
 module cpu (
-  input clk, rst
+  input clk, rst,
+  input [15:0]  in_port,
+  output [15:0] out_port
 );
 
   // ##### Signals #####
@@ -24,12 +26,12 @@ module cpu (
   // Decode
   wire [6:0] opcode;
   wire [2:0] rdst, rsrc1, rsrc2;
-  wire [15:0] imm;
+  wire [15:0] imm, in;
   // Register File
   wire [15:0] rd1, rd2;
   // Control
   wire [2:0] branch;
-  wire setC, load;
+  wire setC, load, inSignal, outSignal;
   wire imm1, imm2;
   wire skipE;
   wire [2:0] func;
@@ -42,9 +44,9 @@ module cpu (
   // -- Inputs
   wire [31:0] ex_pc;
   wire [2:0] ex_rdst, ex_rsrc1, ex_rsrc2;
-  wire [15:0] ex_rd1, ex_rd2, ex_imm;
+  wire [15:0] ex_rd1, ex_rd2, ex_imm, ex_in;
   wire [2:0] ex_branch;
-  wire ex_setC, ex_load;
+  wire ex_setC, ex_load, ex_inSignal;
   wire ex_imm1, ex_imm2;
   wire ex_skipE;
   wire [2:0] ex_func;
@@ -133,11 +135,14 @@ module cpu (
                          .wreg(wb_rdst), .rreg1(rsrc1), .rreg2(rsrc2),
                          .wd(wd),
                          .rd1(rd1), .rd2(rd2));
-
+  // Input/Output Port
+  in_reg in_reg(.clk(clk), .in(in_port), .out(in));
+  out_reg out_reg(.clk(clk), .rst(rst), .load(outSignal), .in(wd), .out(out_port));
   // Control Logic
   control_logic control_logic (.opcode(opcode),
                                .branch(branch),
                                .setC(setC), .load(load),
+                               .in(inSignal), .out(outSignal),
                                .imm1(imm1), .imm2(imm2),
                                .skipE(skipE),
                                .func(func),
@@ -162,14 +167,14 @@ module cpu (
                              .stallD(stallD_i));
 
   // ===== Exec ======
-
+  
   // ID/EX Register
-  wire [104:0] id_ex_in, id_ex_out;
-  assign id_ex_in = {branch, setC, load, imm1, imm2, rsrc1, rsrc2,
-                     skipE, func, skipM, push, pop, wr, skipW,
+  wire [121:0] id_ex_in, id_ex_out;
+  assign id_ex_in = {branch, setC, load, inSignal, imm1, imm2, rsrc1, rsrc2,
+                     skipE, func, skipM, push, pop, wr, skipW, in,
                      imm, rd2, rd1, rdst, id_pc}; 
-  assign {ex_branch, ex_setC, ex_load, ex_imm1, ex_imm2, ex_rsrc1, ex_rsrc2,
-          ex_skipE, ex_func, ex_skipM, ex_push, ex_pop, ex_wr, ex_skipW,
+  assign {ex_branch, ex_setC, ex_load, ex_inSignal, ex_imm1, ex_imm2, ex_rsrc1, ex_rsrc2,
+          ex_skipE, ex_func, ex_skipM, ex_push, ex_pop, ex_wr, ex_skipW, ex_in
           ex_imm, ex_rd2, ex_rd1, ex_rdst, ex_pc} = id_ex_out; 
   stage_reg #(.WIDTH(105)) id_ex_reg (.clk(clk), .rst(rst),
                                       .keep(keepE),
@@ -205,7 +210,7 @@ module cpu (
 
   // ALU Inputs
   wire [15:0] a, b;
-  assign a = s1;
+  assign a = ex_inSignal   ? ex_in : s1;
   assign b = ex_imm2 ? ex_imm : s2;
 
   // Execute Unit
