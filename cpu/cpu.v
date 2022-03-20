@@ -30,6 +30,7 @@ module cpu (
   // Register File
   wire [15:0] rd1, rd2;
   // Control
+  wire hlt;
   wire [2:0] branch;
   wire setC, load, inSignal, outSignal;
   wire imm1, imm2;
@@ -139,7 +140,7 @@ module cpu (
   in_reg in_reg(.clk(clk), .in(in_port), .out(in));
   out_reg out_reg(.clk(clk), .rst(rst), .load(wb_outSignal), .in(wd), .out(out_port));
   // Control Logic
-  control_logic control_logic (.opcode(opcode),
+  control_logic control_logic (.opcode(opcode), .hlt(hlt),
                                .branch(branch),
                                .setC(setC), .load(load),
                                .in(inSignal), .out(outSignal),
@@ -289,7 +290,7 @@ module cpu (
   // ==== Pipeline ====
 
   // Pipeline Unit
-  pipe_unit pipe_unit (.clk(clk), .rst(rst),
+  pipe_unit pipe_unit (.clk(clk), .rst(rst), .hlt(hlt),
                        .stall({1'b0, stallD, 1'b0, 1'b0, 1'b0}),
                        .flush({1'b0, jump, 1'b0, 1'b0, 1'b0}),
                        .keep({keepF, keepD, keepE, keepM, keepW}),
