@@ -46,7 +46,7 @@ module cpu (
   wire [2:0] ex_rdst, ex_rsrc1, ex_rsrc2;
   wire [15:0] ex_rd1, ex_rd2, ex_imm, ex_in;
   wire [2:0] ex_branch;
-  wire ex_setC, ex_load, ex_inSignal;
+  wire ex_setC, ex_load, ex_inSignal, ex_outSignal;
   wire ex_imm1, ex_imm2;
   wire ex_skipE;
   wire [2:0] ex_func;
@@ -72,7 +72,7 @@ module cpu (
   wire [31:0] me_pc;
   wire [2:0] me_rdst;
   wire [15:0] me_s1, me_r, me_s2;
-  wire me_skipE;
+  wire me_skipE, me_outSignal;
   wire me_skipM, me_push, me_pop, me_wr;
   wire me_skipW;
 
@@ -91,7 +91,7 @@ module cpu (
   wire [2:0] wb_rdst;
   wire [15:0] wb_r_s1, wb_do;
   wire wb_skipM;
-  wire wb_skipW;
+  wire wb_skipW, wb_outSignal;
 
   // -- Outputs
   // Write Data
@@ -137,7 +137,7 @@ module cpu (
                          .rd1(rd1), .rd2(rd2));
   // Input/Output Port
   in_reg in_reg(.clk(clk), .in(in_port), .out(in));
-  out_reg out_reg(.clk(clk), .rst(rst), .load(outSignal), .in(wd), .out(out_port));
+  out_reg out_reg(.clk(clk), .rst(rst), .load(wb_outSignal), .in(wd), .out(out_port));
   // Control Logic
   control_logic control_logic (.opcode(opcode),
                                .branch(branch),
@@ -169,14 +169,14 @@ module cpu (
   // ===== Exec ======
   
   // ID/EX Register
-  wire [121:0] id_ex_in, id_ex_out;
-  assign id_ex_in = {branch, setC, load, inSignal, imm1, imm2, rsrc1, rsrc2,
-                     skipE, func, skipM, push, pop, wr, skipW, in,
+  wire [122:0] id_ex_in, id_ex_out;
+  assign id_ex_in = {branch, setC, load, inSignal, outSignal, imm1, imm2, rsrc1, rsrc2,
+                     skipE, func, skipM, push, pop, wr, skipW, in, 
                      imm, rd2, rd1, rdst, id_pc}; 
-  assign {ex_branch, ex_setC, ex_load, ex_inSignal, ex_imm1, ex_imm2, ex_rsrc1, ex_rsrc2,
-          ex_skipE, ex_func, ex_skipM, ex_push, ex_pop, ex_wr, ex_skipW, ex_in
+  assign {ex_branch, ex_setC, ex_load, ex_inSignal, ex_outSignal, ex_imm1, ex_imm2, ex_rsrc1, ex_rsrc2,
+          ex_skipE, ex_func, ex_skipM, ex_push, ex_pop, ex_wr, ex_skipW, ex_in,
           ex_imm, ex_rd2, ex_rd1, ex_rdst, ex_pc} = id_ex_out; 
-  stage_reg #(.WIDTH(105)) id_ex_reg (.clk(clk), .rst(rst),
+  stage_reg #(.WIDTH(123)) id_ex_reg (.clk(clk), .rst(rst),
                                       .keep(keepE),
                                       .in(id_ex_in),
                                       .out(id_ex_out));
@@ -210,7 +210,7 @@ module cpu (
 
   // ALU Inputs
   wire [15:0] a, b;
-  assign a = ex_inSignal   ? ex_in : s1;
+  assign a = ex_inSignal ? ex_in : (ex_imm1 ? ex_imm : s1);
   assign b = ex_imm2 ? ex_imm : s2;
 
   // Execute Unit
@@ -239,12 +239,12 @@ module cpu (
   // ===== Memory ====
 
   // EX/ME Register
-  wire [88:0] ex_me_in, ex_me_out;
-  assign ex_me_in = {ex_skipE, ex_skipM, ex_push, ex_pop, ex_wr, ex_skipW,
-                     s2, r, s1, ex_rdst, ex_pc}; 
-  assign {me_skipE, me_skipM, me_push, me_pop, me_wr, me_skipW,
+  wire [89:0] ex_me_in, ex_me_out;
+  assign ex_me_in = {ex_outSignal, ex_skipE, ex_skipM, ex_push, ex_pop, ex_wr, ex_skipW,
+                     s2, r, a, ex_rdst, ex_pc}; 
+  assign {me_outSignal, me_skipE, me_skipM, me_push, me_pop, me_wr, me_skipW,
           me_s2, me_r, me_s1, me_rdst, me_pc} = ex_me_out; 
-  stage_reg #(.WIDTH(89)) ex_me_reg (.clk(clk), .rst(rst),
+  stage_reg #(.WIDTH(90)) ex_me_reg (.clk(clk), .rst(rst),
                                      .keep(keepM),
                                      .in(ex_me_in),
                                      .out(ex_me_out));
@@ -274,9 +274,9 @@ module cpu (
 
   // ME/WB Register
   wire [68:0] me_wb_in, me_wb_out;
-  assign me_wb_in = {me_skipM, me_skipW,
+  assign me_wb_in = {me_outSignal, me_skipM, me_skipW,
                      do, r_s1, me_rdst, me_pc}; 
-  assign {wb_skipM, wb_skipW,
+  assign {wb_outSignal, wb_skipM, wb_skipW,
           wb_do, wb_r_s1, wb_rdst, wb_pc} = me_wb_out; 
   stage_reg #(.WIDTH(69)) me_wb_reg (.clk(clk), .rst(rst),
                                      .keep(keepW),
