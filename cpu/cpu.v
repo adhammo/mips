@@ -1,5 +1,5 @@
 module cpu (
-  input clk, rst,
+  input clk, rst, rst_signal,
   input [15:0]  in_port,
   output [15:0] out_port
 );
@@ -9,11 +9,11 @@ module cpu (
   // Keep and Dirty
   wire keepF, keepD, keepE, keepM, keepW;
   wire dirtyF, dirtyD, dirtyE, dirtyM, dirtyW;
+  wire extendF, extendD, extendE, extendM, extendW;
 
   // ===== Fetch =====
   // -- Inputs
   wire [31:0] pc;
-  
   // -- Outputs
   // Fetch
   wire [31:0] instr;
@@ -26,13 +26,13 @@ module cpu (
   // Decode
   wire [6:0] opcode;
   wire [2:0] rdst, rsrc1, rsrc2;
-  wire [15:0] imm, in;
+  wire [15:0] imm, inData;
   // Register File
   wire [15:0] rd1, rd2;
   // Control
   wire hlt;
   wire [2:0] branch;
-  wire setC, load, inSignal, outSignal;
+  wire setC, load, in, out;
   wire imm1, imm2;
   wire skipE;
   wire [2:0] func;
@@ -45,9 +45,9 @@ module cpu (
   // -- Inputs
   wire [31:0] ex_pc;
   wire [2:0] ex_rdst, ex_rsrc1, ex_rsrc2;
-  wire [15:0] ex_rd1, ex_rd2, ex_imm, ex_in;
+  wire [15:0] ex_rd1, ex_rd2, ex_imm, ex_input;
   wire [2:0] ex_branch;
-  wire ex_setC, ex_load, ex_inSignal, ex_outSignal;
+  wire ex_setC, ex_load, ex_in, ex_out;
   wire ex_imm1, ex_imm2;
   wire ex_skipE;
   wire [2:0] ex_func;
@@ -73,7 +73,7 @@ module cpu (
   wire [31:0] me_pc;
   wire [2:0] me_rdst;
   wire [15:0] me_s1, me_r, me_s2;
-  wire me_skipE, me_outSignal;
+  wire me_skipE, me_out;
   wire me_skipM, me_push, me_pop, me_wr;
   wire me_skipW;
 
@@ -92,7 +92,7 @@ module cpu (
   wire [2:0] wb_rdst;
   wire [15:0] wb_r_s1, wb_do;
   wire wb_skipM;
-  wire wb_skipW, wb_outSignal;
+  wire wb_skipW, wb_out;
 
   // -- Outputs
   // Write Data
@@ -101,17 +101,11 @@ module cpu (
   // ##### Stages #####
   
   // ===== Fetch =====
-  // PC Register
-  pc_reg pc_reg (.clk(clk), .rst(rst),
-                 .keep(keepF),
-                 .jump(jump),
-                 .target(target),
-                 .pc(pc));
-
   // Fetch Unit
-  fetch_unit fetch_unit (.clk(clk),
-                         .pc(pc),
-                         .instr(instr));
+  fetch_unit fetch_unit (.clk(clk), .rst_signal(rst_signal), 
+                         .keep(keepF), .jump(jump),
+                         .target(target),
+                         .extend(extendF), .pc(pc), .instr(instr));
 
   // ===== Decode ====
 
@@ -137,13 +131,13 @@ module cpu (
                          .wd(wd),
                          .rd1(rd1), .rd2(rd2));
   // Input/Output Port
-  in_reg in_reg(.clk(clk), .in(in_port), .out(in));
+  in_reg in_reg(.clk(clk), .in(in_port), .out(inData));
   out_reg out_reg(.clk(clk), .rst(rst), .load(wb_outSignal), .in(wd), .out(out_port));
   // Control Logic
   control_logic control_logic (.opcode(opcode), .hlt(hlt),
                                .branch(branch),
                                .setC(setC), .load(load),
-                               .in(inSignal), .out(outSignal),
+                               .in(in), .out(out),
                                .imm1(imm1), .imm2(imm2),
                                .skipE(skipE),
                                .func(func),
@@ -171,11 +165,11 @@ module cpu (
   
   // ID/EX Register
   wire [122:0] id_ex_in, id_ex_out;
-  assign id_ex_in = {branch, setC, load, inSignal, outSignal, imm1, imm2, rsrc1, rsrc2,
-                     skipE, func, skipM, push, pop, wr, skipW, in, 
+  assign id_ex_in = {branch, setC, load, in, out, imm1, imm2, rsrc1, rsrc2,
+                     skipE, func, skipM, push, pop, wr, skipW, inData, 
                      imm, rd2, rd1, rdst, id_pc}; 
-  assign {ex_branch, ex_setC, ex_load, ex_inSignal, ex_outSignal, ex_imm1, ex_imm2, ex_rsrc1, ex_rsrc2,
-          ex_skipE, ex_func, ex_skipM, ex_push, ex_pop, ex_wr, ex_skipW, ex_in,
+  assign {ex_branch, ex_setC, ex_load, ex_in, ex_out, ex_imm1, ex_imm2, ex_rsrc1, ex_rsrc2,
+          ex_skipE, ex_func, ex_skipM, ex_push, ex_pop, ex_wr, ex_skipW, ex_input,
           ex_imm, ex_rd2, ex_rd1, ex_rdst, ex_pc} = id_ex_out; 
   stage_reg #(.WIDTH(123)) id_ex_reg (.clk(clk), .rst(rst),
                                       .keep(keepE),
@@ -211,7 +205,7 @@ module cpu (
 
   // ALU Inputs
   wire [15:0] a, b;
-  assign a = ex_inSignal ? ex_in : (ex_imm1 ? ex_imm : s1);
+  assign a = ex_in ? ex_input : (ex_imm1 ? ex_imm : s1);
   assign b = ex_imm2 ? ex_imm : s2;
 
   // Execute Unit
@@ -241,9 +235,9 @@ module cpu (
 
   // EX/ME Register
   wire [89:0] ex_me_in, ex_me_out;
-  assign ex_me_in = {ex_outSignal, ex_skipE, ex_skipM, ex_push, ex_pop, ex_wr, ex_skipW,
+  assign ex_me_in = {ex_out, ex_skipE, ex_skipM, ex_push, ex_pop, ex_wr, ex_skipW,
                      s2, r, a, ex_rdst, ex_pc}; 
-  assign {me_outSignal, me_skipE, me_skipM, me_push, me_pop, me_wr, me_skipW,
+  assign {me_out, me_skipE, me_skipM, me_push, me_pop, me_wr, me_skipW,
           me_s2, me_r, me_s1, me_rdst, me_pc} = ex_me_out; 
   stage_reg #(.WIDTH(90)) ex_me_reg (.clk(clk), .rst(rst),
                                      .keep(keepM),
@@ -275,9 +269,9 @@ module cpu (
 
   // ME/WB Register
   wire [68:0] me_wb_in, me_wb_out;
-  assign me_wb_in = {me_outSignal, me_skipM, me_skipW,
+  assign me_wb_in = {me_out, me_skipM, me_skipW,
                      do, r_s1, me_rdst, me_pc}; 
-  assign {wb_outSignal, wb_skipM, wb_skipW,
+  assign {wb_out, wb_skipM, wb_skipW,
           wb_do, wb_r_s1, wb_rdst, wb_pc} = me_wb_out; 
   stage_reg #(.WIDTH(69)) me_wb_reg (.clk(clk), .rst(rst),
                                      .keep(keepW),
@@ -290,9 +284,10 @@ module cpu (
   // ==== Pipeline ====
 
   // Pipeline Unit
-  pipe_unit pipe_unit (.clk(clk), .rst(rst), .hlt(hlt),
-                       .stall({1'b0, stallD, 1'b0, 1'b0, 1'b0}),
-                       .flush({1'b0, jump, 1'b0, 1'b0, 1'b0}),
+  pipe_unit pipe_unit (.clk(clk), .rst(rst), 
+                       .stall({1'b0 | hlt, stallD | hlt , 1'b0, 1'b0, 1'b0}),
+                       .flush({1'b0, jump | hlt, 1'b0, 1'b0, 1'b0}),
+                       .extend({extendF, 1'b0, 1'b0, 1'b0, 1'b0}),
                        .keep({keepF, keepD, keepE, keepM, keepW}),
                        .dirty({dirtyF, dirtyD, dirtyE, dirtyM, dirtyW}));
 
