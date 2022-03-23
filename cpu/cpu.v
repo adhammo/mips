@@ -1,5 +1,5 @@
 module cpu (
-  input clk, rst, rst_signal,
+  input clk, rst, 
   input [15:0]  in_port,
   output [15:0] out_port
 );
@@ -101,12 +101,12 @@ module cpu (
   // ##### Stages #####
   
   // ===== Fetch =====
+  
   // Fetch Unit
-  fetch_unit fetch_unit (.clk(clk), .rst_signal(rst_signal), 
+  fetch_unit fetch_unit (.clk(clk), .rst(rst), 
                          .keep(keepF), .jump(jump),
                          .target(target),
                          .extend(extendF), .pc(pc), .instr(instr));
-
   // ===== Decode ====
 
   // IF/ID Register
