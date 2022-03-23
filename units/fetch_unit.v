@@ -1,6 +1,6 @@
 module fetch_unit (
   input clk, rst,
-  input keep, jump,
+  input dirty, jump,
   input [31:0] target,
   output reg extend,
   output wire [31:0] pc, instr
@@ -19,7 +19,7 @@ module fetch_unit (
       currentState <= LOOKUP; 
     end
   end
-
+  // State Operation
   always @(*) begin
     case (currentState)
       NORMAL: begin
@@ -34,12 +34,11 @@ module fetch_unit (
         extend = 1'b1;
         instrAddr = 18'd0; 
         pc_in  = instr;
-        extend = 1'b0;
       end
       default: currentState = NORMAL;
     endcase
   end
-
+  //State Transition
   always @(*) begin
     case (currentState)
       NORMAL: 
@@ -48,15 +47,17 @@ module fetch_unit (
       LOOKUP: 
         if(!rst)
           currentState = LOOKUP;
-        else if(pc == instr)
+        else if(pc == instr) begin
+          extend = 1'b0;
           currentState = NORMAL;
+        end 
       default: currentState = NORMAL;
     endcase
   end
 
   // PC Register
   pc_reg pc_reg (.clk(clk), .rst(rst),
-                 .keep(keep),
+                 .dirty(dirty),
                  .pc_in(pc_in),
                  .pc(pc));
   // Instruction Memory

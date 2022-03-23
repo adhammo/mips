@@ -101,10 +101,10 @@ module cpu (
   // ##### Stages #####
   
   // ===== Fetch =====
-  
+
   // Fetch Unit
   fetch_unit fetch_unit (.clk(clk), .rst(rst), 
-                         .keep(keepF), .jump(jump),
+                         .dirty(dirtyF), .jump(jump),
                          .target(target),
                          .extend(extendF), .pc(pc), .instr(instr));
   // ===== Decode ====
