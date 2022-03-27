@@ -3,9 +3,11 @@ add wave -noupdate -label rst -radix binary /cpu_tb/rst
 add wave -noupdate -group Ports    -label inPort  -radix binary /cpu_tb/in
 add wave -noupdate -group Ports    -label outPort -radix binary /cpu_tb/out
 add wave -noupdate -group Pipeline -label flush -radix binary /cpu_tb/cpu/pipe_unit/stall
+add wave -noupdate -group Pipeline -label stall -radix binary /cpu_tb/cpu/pipe_unit/extend
 add wave -noupdate -group Pipeline -label stall -radix binary /cpu_tb/cpu/pipe_unit/flush
 add wave -noupdate -group Pipeline -label dirty -radix binary /cpu_tb/cpu/pipe_unit/dirty
 add wave -noupdate -group Pipeline -label keep -radix binary /cpu_tb/cpu/pipe_unit/keep
+add wave -noupdate -group Fetch -label pc_in -radix hexadecimal /cpu_tb/cpu/fetch_unit/currentState
 add wave -noupdate -group Fetch -label jump -radix binary /cpu_tb/cpu/jump
 add wave -noupdate -group Fetch -label target -radix hexadecimal /cpu_tb/cpu/target
 add wave -noupdate -group Fetch -label pc_in -radix hexadecimal /cpu_tb/cpu/fetch_unit/pc_in

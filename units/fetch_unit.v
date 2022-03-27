@@ -23,6 +23,7 @@ module fetch_unit (
   always @(*) begin
     case (currentState)
       NORMAL: begin
+        extend = 1'b0;
         //calculate new pc
         if (jump)
           pc_in = target;
@@ -35,23 +36,21 @@ module fetch_unit (
         instrAddr = 18'd0; 
         pc_in  = instr;
       end
-      default: currentState = NORMAL;
     endcase
   end
   //State Transition
-  always @(*) begin
+  always @(posedge clk, negedge rst) begin
     case (currentState)
       NORMAL: 
         if(!rst)
-          currentState = LOOKUP;
+          currentState <= LOOKUP;
       LOOKUP: 
         if(!rst)
-          currentState = LOOKUP;
+          currentState <= LOOKUP;
         else if(pc == instr) begin
-          extend = 1'b0;
-          currentState = NORMAL;
+          currentState <= NORMAL;
         end 
-      default: currentState = NORMAL;
+      default: currentState <= NORMAL;
     endcase
   end
 
