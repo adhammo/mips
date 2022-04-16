@@ -14,6 +14,7 @@ module cpu (
   // ===== Fetch =====
   // -- Inputs
   wire [31:0] pc;
+  wire int, expt1, expt2;
   // -- Outputs
   // Fetch
   wire [31:0] instr;
@@ -104,7 +105,7 @@ module cpu (
 
   // Fetch Unit
   fetch_unit fetch_unit (.clk(clk), .rst(rst), 
-                         .dirty(dirtyF), .jump(jump),
+                         .dirty(dirtyF), .jump(jump), .int(int), .expt1(expt1), .expt2(exp2),
                          .target(target),
                          .extend(extendF), .pc(pc), .instr(instr));
   // ===== Decode ====

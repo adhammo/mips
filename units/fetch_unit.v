@@ -1,57 +1,50 @@
 module fetch_unit (
   input clk, rst,
-  input dirty, jump,
+  input dirty, jump, int, expt1, expt2,
   input [31:0] target,
-  output reg extend,
+  output wire extend,
   output wire [31:0] pc, instr
 );
   //Internal Variables
+  wire fetch, currentState;
+  wire [1:0] fetch_src;
+  reg [17:0] fetch_addr;
+  
   reg [31:0] pc_in;
-  reg [17:0] instrAddr;
+  reg [31:0] mem_target;
+  wire [17:0] instrAddr;
   //FSM
-  localparam NORMAL = 1'b0;
+  localparam NORMAL  = 1'b0;
   localparam LOOKUP  = 1'b1;
-  reg currentState;
 
 
-  always @(posedge clk, negedge rst) begin
-    if(!rst) begin
-      currentState <= LOOKUP; 
-    end
-  end
-  // State Operation
+  //Assign New InstrAddr
+  assign instrAddr = fetch ? fetch_addr : pc[19:2];
+  //Assign New FetchAddr
   always @(*) begin
-    case (currentState)
-      NORMAL: begin
-        extend = 1'b0;
-        //calculate new pc
-        if (jump)
-          pc_in = target;
-        else
-          pc_in = pc + 32'd4; 
-        instrAddr = pc[19:2];
-      end
-      LOOKUP: begin
-        extend = 1'b1;
-        instrAddr = 18'd0; 
-        pc_in  = instr;
-      end
+    case (fetch_src)
+      2'b00:
+        fetch_addr = 18'd0;
+      2'b01:
+        fetch_addr = 18'd4;
+      2'b10:
+        fetch_addr = 18'd8;
+      2'b11:
+        fetch_addr = 18'd12;
     endcase
   end
-  //State Transition
-  always @(posedge clk, negedge rst) begin
-    case (currentState)
-      NORMAL: 
-        if(!rst)
-          currentState <= LOOKUP;
-      LOOKUP: 
-        if(!rst)
-          currentState <= LOOKUP;
-        else if(pc == instr) begin
-          currentState <= NORMAL;
-        end 
-      default: currentState <= NORMAL;
-    endcase
+  //Assign New pc_in
+  always @(*) begin
+    case ({fetch, jump})
+      2'b00:
+        pc_in = pc + 32'd4;
+      2'b01:
+        pc_in = target;
+      2'b10:
+        pc_in = instr;
+      2'b11:
+        pc_in = mem_target;
+      endcase
   end
 
   // PC Register
@@ -65,5 +58,10 @@ module fetch_unit (
                                                          .addr(instrAddr),
                                                          .in(32'd0),
                                                          .out(instr));
+  fetch_logic #(.NORMAL(NORMAL), .LOOKUP(LOOKUP)) fetch_logic (.clk(clk), .rst(rst),
+                                                               .pc(pc), .instr(instr),
+                                                               .int(int), .expt1(expt1), .expt2(expt2),
+                                                               .extend(extend), .fetch(fetch), .currentState(currentState),
+                                                               .fetch_src(fetch_src));
 
 endmodule
