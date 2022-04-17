@@ -9,12 +9,12 @@ module cpu_tb;
 
   initial begin
     // load test code
-    $readmemh("in_out.txt", cpu.fetch_unit.instr_memory.mem); 
+    $readmemh("/tests/start.txt", cpu.fetch_unit.instr_memory.mem);
+    $readmemh("/tests/in_out.txt", cpu.fetch_unit.instr_memory.mem, (cpu.fetch_unit.instr_memory.mem[18'd0] >> 2'd2)); 
 
     // init
     clk = 1'b0;
     rst = 1'b1; #1;
-    in  = 16'd20;
 
     // reset
     rst = 1'b0; #6;

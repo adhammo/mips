@@ -1,8 +1,8 @@
 module pc_reg (
   input clk, rst,
-  input keep,
-  input jump,
-  input [31:0] target,
+  input enable,
+  input load,
+  input [31:0] in,
   output wire [31:0] pc
 );
 
@@ -10,15 +10,15 @@ module pc_reg (
   reg [31:0] pc_in;
   always @(*) begin
     // calculate new pc
-    if (jump)
-      pc_in = target;
+    if (load)
+      pc_in = in;
     else
       pc_in = pc + 32'd4;
   end
 
   // PC Register
   register #(.WIDTH(32)) pc_regi (.clk(clk), .rst(rst),
-                                  .load(!keep),
+                                  .load(enable),
                                   .in(pc_in),
                                   .out(pc));
  

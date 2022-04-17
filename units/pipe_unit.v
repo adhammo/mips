@@ -2,6 +2,7 @@ module pipe_unit (
   input clk, rst,
   input [4:0] stall,
   input [4:0] flush,
+  input [4:0] extend,
   output reg [4:0] keep,
   output reg [4:0] dirty
 );
@@ -17,8 +18,8 @@ module pipe_unit (
   end
 
   // Next Bubbles Calculation
-  always @(*) begin
-    // flusing (set as bubbles)
+  always @(*) begin 
+    // flushing (set as bubbles)
     casez (flush)
       5'b????1: nextBubble = 5'b11111;
       5'b???10: nextBubble = {4'b1111, bubble[0]};
@@ -29,8 +30,8 @@ module pipe_unit (
       default: nextBubble = bubble[4:0];
     endcase
 
-    // stalling (insert bubbles)
-    casez (stall)
+    // stalling/extending (insert bubbles)
+    casez (stall | extend)
       5'b????1: nextBubble = nextBubble;
       5'b???10: nextBubble = {nextBubble[4:1], 1'b1};
       5'b??100: nextBubble = {nextBubble[4:2], 1'b1, nextBubble[1]};
@@ -43,20 +44,20 @@ module pipe_unit (
 
   // Keep Values
   always @(*) begin
-    keep[0] = stall[0];
-    keep[1] = |stall[1:0];
-    keep[2] = |stall[2:0];
-    keep[3] = |stall[3:0];
-    keep[4] = |stall[4:0];
+    keep[0] = stall[0] || extend[0];
+    keep[1] = |stall[1:0] || |extend[1:0];
+    keep[2] = |stall[2:0] || |extend[2:0];
+    keep[3] = |stall[3:0] || |extend[3:0];
+    keep[4] = |stall[4:0] || |extend[4:0];
   end
 
   // Dirty Values
   always @(*) begin
     dirty[0] = bubble[0] || flush[0] || stall[0];
-    dirty[1] = bubble[1] || |flush[1:0] || |stall[1:0];
-    dirty[2] = bubble[2] || |flush[2:0] || |stall[2:0];
-    dirty[3] = bubble[3] || |flush[3:0] || |stall[3:0];
-    dirty[4] = bubble[4] || |flush[4:0] || |stall[4:0];
+    dirty[1] = bubble[1] || |flush[1:0] || |stall[1:0] || extend[0];
+    dirty[2] = bubble[2] || |flush[2:0] || |stall[2:0] || |extend[1:0];
+    dirty[3] = bubble[3] || |flush[3:0] || |stall[3:0] || |extend[2:0];
+    dirty[4] = bubble[4] || |flush[4:0] || |stall[4:0] || |extend[3:0];
   end
 
 endmodule
