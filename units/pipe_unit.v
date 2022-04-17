@@ -13,16 +13,12 @@ module pipe_unit (
 
   // Pipeline Control (bubbles propagation)
   always @(posedge clk or negedge rst) begin
-    if (!rst) 
-      bubble <= 5'b01111;  // reset pipeline
-     
-    else 
-      bubble <= nextBubble;     // advance pipeline
+    if (!rst) bubble <= 5'b01111;  // reset pipeline
+    else bubble <= nextBubble;     // advance pipeline
   end
 
   // Next Bubbles Calculation
   always @(*) begin 
-    //Next bubble calculation
     // flushing (set as bubbles)
     casez (flush)
       5'b????1: nextBubble = 5'b11111;
@@ -34,7 +30,7 @@ module pipe_unit (
       default: nextBubble = bubble[4:0];
     endcase
 
-    // stalling (insert bubbles)
+    // stalling/extending (insert bubbles)
     casez (stall | extend)
       5'b????1: nextBubble = nextBubble;
       5'b???10: nextBubble = {nextBubble[4:1], 1'b1};
@@ -44,19 +40,19 @@ module pipe_unit (
       5'b00000: nextBubble = {1'b0, nextBubble[4:1]};
       default: nextBubble = {1'b0, nextBubble[4:1]};
     endcase
-
   end
-  
-  // FSM
-  always @(*) begin
 
-    //Keep Values
+  // Keep Values
+  always @(*) begin
     keep[0] = stall[0] || extend[0];
     keep[1] = |stall[1:0] || |extend[1:0];
     keep[2] = |stall[2:0] || |extend[2:0];
     keep[3] = |stall[3:0] || |extend[3:0];
     keep[4] = |stall[4:0] || |extend[4:0];
-    // Dirty Values
+  end
+
+  // Dirty Values
+  always @(*) begin
     dirty[0] = bubble[0] || flush[0] || stall[0];
     dirty[1] = bubble[1] || |flush[1:0] || |stall[1:0] || extend[0];
     dirty[2] = bubble[2] || |flush[2:0] || |stall[2:0] || |extend[1:0];
