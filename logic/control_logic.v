@@ -12,7 +12,7 @@ module control_logic (
 );
 
   // Control Code
-  reg [19:0] code;
+  reg [18:0] code;
 
   // Control Signals E0traction
   assign {hlt, branch, setC, load, in, out,
