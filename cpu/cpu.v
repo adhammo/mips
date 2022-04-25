@@ -8,6 +8,7 @@ module cpu (
 
   // Fetch
   parameter RSTSRC = 2'b00;
+  parameter INTSRC = 2'b01;
 
   // Forward
   parameter MEF = 2'b10;
@@ -22,7 +23,8 @@ module cpu (
 
   // ===== Fetch =====
   // -- Inputs
-  wire [31:0] pc;
+  wire [31:0] pc, memTarget;
+  wire jumpM;
 
   // -- Fetch Control Outputs
   wire fetch;
@@ -47,7 +49,7 @@ module cpu (
   // Register File
   wire [15:0] rd1, rd2;
   // Control
-  wire hlt;
+  wire int, call, ret, hlt;
   wire [2:0] branch;
   wire setC, load;
   wire in, out;
@@ -70,7 +72,7 @@ module cpu (
   wire ex_imm1, ex_imm2;
   wire ex_skipE;
   wire [2:0] ex_func;
-  wire ex_skipM, ex_push, ex_pop, ex_wr;
+  wire ex_skipM, ex_int, ex_call, ex_ret, ex_push, ex_pop, ex_wr;
   wire ex_skipW;
 
   // -- Flags Register Output
@@ -94,7 +96,7 @@ module cpu (
   wire [15:0] me_s1, me_r, me_s2;
   wire me_out;
   wire me_skipE;
-  wire me_skipM, me_push, me_pop, me_wr;
+  wire me_skipM, me_int, me_call, me_ret, me_push, me_pop, me_wr;
   wire me_skipW;
 
   // -- SP Register Output
@@ -124,18 +126,20 @@ module cpu (
   // ===== Fetch =====
 
   // PC Input
-  reg [31:0] pc_in;
+  wire [31:0] pc_in;
+  reg [31:0] pc_src;
   always @(*) begin
     // calculate pc input
-    if (fetch) pc_in = instr;
-    else if (jump) pc_in = target;
-    else pc_in = 32'b0;
+    if (fetch) pc_src = instr;
+    else if (jump) pc_src = target;
+    else pc_src = 32'b0;
   end
  
+  assign pc_in = jumpM? memTarget : pc_src;
   // PC Register
   pc_reg pc_reg (.clk(clk), .rst(rst),
                  .enable(!dirtyF),
-                 .load(jump || fetch),
+                 .load(jump || fetch || jumpM),
                  .in(pc_in),
                  .pc(pc));
 
@@ -146,6 +150,7 @@ module cpu (
     if (fetch) begin
       case (fetchSrc)
         RSTSRC: instrAddr = 32'b0;
+        INTSRC: instrAddr = 32'd4 + id_instr[31:16]; //Index + 4
         default: instrAddr = 32'b0;
       endcase
     end else instrAddr = pc;
@@ -199,6 +204,7 @@ module cpu (
 
   // Control Logic
   control_logic control_logic (.opcode(opcode),
+                               .int(int), .call(call), .ret(ret),
                                .hlt(hlt),
                                .branch(branch),
                                .setC(setC), .load(load),
@@ -229,14 +235,14 @@ module cpu (
   // ===== Exec ======
 
   // ID/EX Register
-  wire [122:0] id_ex_in, id_ex_out;
+  wire [125:0] id_ex_in, id_ex_out;
   assign id_ex_in = {branch, setC, load, in, out, imm1, imm2, rsrc1, rsrc2,
-                     skipE, func, skipM, push, pop, wr, skipW,
+                     skipE, func, skipM, int, call, ret, push, pop, wr, skipW,
                      inputData, imm, rd2, rd1, rdst, id_pc};
   assign {ex_branch, ex_setC, ex_load, ex_in, ex_out, ex_imm1, ex_imm2, ex_rsrc1, ex_rsrc2,
-          ex_skipE, ex_func, ex_skipM, ex_push, ex_pop, ex_wr, ex_skipW,
+          ex_skipE, ex_func, ex_skipM, ex_int, ex_call, ex_ret, ex_push, ex_pop, ex_wr, ex_skipW,
           ex_input, ex_imm, ex_rd2, ex_rd1, ex_rdst, ex_pc} = id_ex_out;
-  stage_reg #(.WIDTH(123)) id_ex_reg (.clk(clk), .rst(rst),
+  stage_reg #(.WIDTH(126)) id_ex_reg (.clk(clk), .rst(rst),
                                       .keep(keepE),
                                       .in(id_ex_in),
                                       .out(id_ex_out));
@@ -299,12 +305,12 @@ module cpu (
   // ===== Memory ====
 
   // EX/ME Register
-  wire [89:0] ex_me_in, ex_me_out;
-  assign ex_me_in = {ex_out, ex_skipE, ex_skipM, ex_push, ex_pop, ex_wr, ex_skipW,
+  wire [92:0] ex_me_in, ex_me_out;
+  assign ex_me_in = {ex_out, ex_skipE, ex_skipM, ex_int, ex_call, ex_ret, ex_push, ex_pop, ex_wr, ex_skipW,
                      s2, r, s1, ex_rdst, ex_pc}; 
-  assign {me_out, me_skipE, me_skipM, me_push, me_pop, me_wr, me_skipW,
+  assign {me_out, me_skipE, me_skipM, me_int, me_call, me_ret, me_push, me_pop, me_wr, me_skipW,
           me_s2, me_r, me_s1, me_rdst, me_pc} = ex_me_out; 
-  stage_reg #(.WIDTH(90)) ex_me_reg (.clk(clk), .rst(rst),
+  stage_reg #(.WIDTH(93)) ex_me_reg (.clk(clk), .rst(rst),
                                      .keep(keepM),
                                      .in(ex_me_in),
                                      .out(ex_me_out));
@@ -315,16 +321,28 @@ module cpu (
                  .push(me_push), .pop(me_pop),
                  .sp(sp));
 
-  // Memory Address
-  wire [31:0] memAddr;
-  assign memAddr = push || pop ? sp : {16'b0, me_r};
-
+  // Memory Data
+  wire [31:0] memAddr, memInput;
+  wire count;
+  assign memAddr  = push || pop ? sp : {16'b0, me_r};
+  assign memInput = me_int?  (count? me_pc[31:16] : (me_call? me_pc[15:0] + 16'd1 : me_pc[15:0])) : me_s2;
+  //Memory Control
+  mem_control mem_control (.clk(clk), .rst(rst),
+                           .int(me_int), .ret(me_ret),
+                           .count(count), 
+                           .extend(extednM), 
+                           .jump(jumpM));
+  //Memory Shift Register
+  shift_reg shift_reg (.clk(clk), .rst(rst),
+                       .load(me_ret&&!skipM&&!dirtyM),
+                       .in(do),
+                       .out(memTarget));                       
   // Memory Unit
   mem_unit mem_unit (.clk(clk),
                      .dirty(dirtyM), .skip(me_skipM),
                      .wr(me_wr),
                      .addr(memAddr),
-                     .di(me_s2),
+                     .di(memInput),
                      .do(do));
 
   // Skip Execute
