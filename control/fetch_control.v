@@ -8,16 +8,17 @@ module fetch_control (
   parameter RSTSRC = 2'b00;
   parameter INTSRC = 2'b01;
 
-  parameter NORM = 1'b0;
-  parameter LOOK = 1'b1;
+  parameter NORM = 2'b00;
+  parameter RST  = 2'b01;
+  parameter INT  = 2'b10;
 
   // Current State
-  reg state;
+  reg [1:0] state;
 
   // State Transition
   always @(posedge clk or negedge rst) begin
-    if (!rst) state <= LOOK;
-    else if(int) state <= LOOK;
+    if (!rst) state <= RST;
+    else if(int) state <= INT;
     else state <= NORM;
   end
 
@@ -29,13 +30,15 @@ module fetch_control (
         fetch = 1'b0;
         fetchSrc = 2'b00;
       end
-      LOOK: begin
+      RST: begin
         extend = 1'b1;
         fetch = 1'b1;
         fetchSrc = RSTSRC;
-        if(int)  begin
-          fetchSrc = INTSRC;
-        end
+      end
+      INT: begin
+        extend = 1'b1;
+        fetch = 1'b1;
+        fetchSrc = INTSRC;
       end
     endcase
   end

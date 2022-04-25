@@ -24,7 +24,6 @@ module cpu (
   // ===== Fetch =====
   // -- Inputs
   wire [31:0] pc, memTarget;
-  wire jumpM;
 
   // -- Fetch Control Outputs
   wire fetch;
@@ -107,6 +106,9 @@ module cpu (
   wire [15:0] r_s1;
   // Memory
   wire [15:0] do;
+  //Memory Control
+  wire callM, jumpM;
+  wire [31:0] me_target;
 
   // ===== Write =====
   // -- Inputs
@@ -132,13 +134,14 @@ module cpu (
     // calculate pc input
     if (fetch) pc_src = instr;
     else if (jump) pc_src = target;
+    else if (callM) pc_src = me_target;
     else pc_src = 32'b0;
   end
  
   assign pc_in = jumpM? memTarget : pc_src;
   // PC Register
   pc_reg pc_reg (.clk(clk), .rst(rst),
-                 .enable(!dirtyF),
+                 .enable(!keepF||(!dirtyF&&fetch)),
                  .load(jump || fetch || jumpM),
                  .in(pc_in),
                  .pc(pc));
@@ -150,7 +153,7 @@ module cpu (
     if (fetch) begin
       case (fetchSrc)
         RSTSRC: instrAddr = 32'b0;
-        INTSRC: instrAddr = 32'd4 + id_instr[31:16]; //Index + 4
+        INTSRC: instrAddr = 32'd4 + me_s1; //Index + 4
         default: instrAddr = 32'b0;
       endcase
     end else instrAddr = pc;
@@ -163,7 +166,7 @@ module cpu (
 
   // Fetch Control
   fetch_control fetch_control (.clk(clk), .rst(rst),
-                               .extend(extendF),
+                               .extend(extendF), .int(callM),
                                .fetch(fetch),
                                .fetchSrc(fetchSrc));
 
@@ -305,36 +308,37 @@ module cpu (
   // ===== Memory ====
 
   // EX/ME Register
-  wire [92:0] ex_me_in, ex_me_out;
-  assign ex_me_in = {ex_out, ex_skipE, ex_skipM, ex_int, ex_call, ex_ret, ex_push, ex_pop, ex_wr, ex_skipW,
-                     s2, r, s1, ex_rdst, ex_pc}; 
+  wire [124:0] ex_me_in, ex_me_out;
+  assign ex_me_in = {ex_out, ex_skipE, ex_skipM, ex_int, ex_call, ex_ret, ex_push, ex_pop, ex_wr, ex_skipW, 
+                     target, s2, r, s1, ex_rdst, ex_pc}; 
   assign {me_out, me_skipE, me_skipM, me_int, me_call, me_ret, me_push, me_pop, me_wr, me_skipW,
-          me_s2, me_r, me_s1, me_rdst, me_pc} = ex_me_out; 
-  stage_reg #(.WIDTH(93)) ex_me_reg (.clk(clk), .rst(rst),
+          me_target, me_s2, me_r, me_s1, me_rdst, me_pc} = ex_me_out; 
+  stage_reg #(.WIDTH(125)) ex_me_reg (.clk(clk), .rst(rst),
                                      .keep(keepM),
                                      .in(ex_me_in),
                                      .out(ex_me_out));
 
   // SP Register
   sp_reg sp_reg (.clk(clk), .rst(rst),
-                 .enable(!(dirtyE || me_skipM)),
+                 .enable(!(dirtyM || me_skipM)),
                  .push(me_push), .pop(me_pop),
                  .sp(sp));
 
   // Memory Data
-  wire [31:0] memAddr, memInput;
+  wire [31:0] memAddr;
+  wire [15:0] memInput;
   wire count;
-  assign memAddr  = push || pop ? sp : {16'b0, me_r};
-  assign memInput = me_int?  (count? me_pc[31:16] : (me_call? me_pc[15:0] + 16'd1 : me_pc[15:0])) : me_s2;
+  assign memAddr  = me_push || me_pop ? sp : {16'b0, me_r};
+  assign memInput = me_int?  (count?  me_pc[31:16]: me_pc[15:0] + 16'd4) : me_s2;
   //Memory Control
   mem_control mem_control (.clk(clk), .rst(rst),
-                           .int(me_int), .ret(me_ret),
+                           .int(me_int), .ret(me_ret), .call(me_call),
                            .count(count), 
-                           .extend(extednM), 
-                           .jump(jumpM));
+                           .extend(extendM), 
+                           .jumpRet(jumpM), .jumpCall(callM));
   //Memory Shift Register
   shift_reg shift_reg (.clk(clk), .rst(rst),
-                       .load(me_ret&&!skipM&&!dirtyM),
+                       .load(me_ret),
                        .in(do),
                        .out(memTarget));                       
   // Memory Unit
@@ -370,7 +374,7 @@ module cpu (
   pipe_unit pipe_unit (.clk(clk), .rst(rst),
                        .stall({1'b0, stallD, 1'b0, 1'b0, 1'b0}),
                        .flush({1'b0, jump, 1'b0, 1'b0, 1'b0}),
-                       .extend({extendF, 1'b0, 1'b0, 1'b0, 1'b0}),
+                       .extend({extendF, 1'b0, 1'b0, extendM, 1'b0}),
                        .keep({keepF, keepD, keepE, keepM, keepW}),
                        .dirty({dirtyF, dirtyD, dirtyE, dirtyM, dirtyW}));
 

@@ -1,9 +1,9 @@
 module mem_control (
     input clk, rst,
-    input ret, int,
+    input ret, int, call,
     output reg count,
     output reg extend,
-    output reg jump
+    output reg jumpRet, jumpCall,
 );
   parameter NORM = 2'b00;
   parameter RET  = 2'b01;
@@ -11,19 +11,26 @@ module mem_control (
 
   reg [1:0] state, nextstate;
   //State Transition
-  always@(posedge clk or negedge rst) begin
-      if(!rst) begin 
-          nextstate <= NORM;
-          state <= NORM;
-      end
-      else state <= nextstate;
-  end
+//   always@(posedge clk or negedge rst) begin
+//       if(!rst) begin 
+//          // nextstate <= NORM;
+//         //  state <= NORM;
+//       end
+//       else if(int) state <= INT;
+//       else if(ret) state <= RET;
+//       else state <= nextstate;
+//   end
   //Transition Logic
   always@(*) begin
-      if(ret) nextstate = RET;
-      else if(int) nextstate = INT;
-      if(count == 1'b1) nextstate = NORM;
+      if(!rst) begin
+        state = NORM;
+     end  
+      else if(int) state = INT;
+      else if(ret) state = RET;
+      else state = NORM;
+      if(count == 1'b1) state = int ? INT : (ret? RET: NORM);
   end
+
   //Clock Transition
   always@(posedge clk or negedge rst) begin
       if(!rst) begin 
@@ -31,6 +38,8 @@ module mem_control (
       end
       else if(state == INT || state == RET) begin 
           count <= count + 1'b1;
+        //   if(count >= 2'b10)
+        //     count <= 2'b00;
       end
       else begin
           count <= 1'b0;
@@ -38,18 +47,27 @@ module mem_control (
   end
   //State Operation
   always @(*) begin
-      jump   = 1'b0;
+      jumpRet   = 1'b0;
+      jumpCall   = 1'b0;
       case(state)
         NORM: begin
             extend = 1'b0;
         end
         INT: begin
-            extend = 1'b1;
+            if(count == 2'b00)
+                extend = 1'b1;
+            else if(count == 2'b01) begin
+                extend = 1'b0;
+                jumpCall = 1'b1; 
+            end
         end
         RET: begin
-            extend = 1'b1;
-            if(count == 1'b1)
-              jump = 1'b1;
+            if(count == 1'b0)
+                extend = 1'b1;
+            else if(count == 1'b1) begin
+                extend = 1'b0;
+                jumpRet = 1'b1; 
+            end
         end
         default: begin
             extend = 1'b0;
