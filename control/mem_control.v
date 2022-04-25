@@ -3,7 +3,7 @@ module mem_control (
     input ret, int, call,
     output reg count,
     output reg extend,
-    output reg jumpRet, jumpCall,
+    output reg jumpRet, jumpCall, jumpInt
 );
   parameter NORM = 2'b00;
   parameter RET  = 2'b01;
@@ -48,6 +48,7 @@ module mem_control (
   //State Operation
   always @(*) begin
       jumpRet   = 1'b0;
+      jumpInt   = 1'b0;
       jumpCall   = 1'b0;
       case(state)
         NORM: begin
@@ -58,7 +59,8 @@ module mem_control (
                 extend = 1'b1;
             else if(count == 2'b01) begin
                 extend = 1'b0;
-                jumpCall = 1'b1; 
+                if(int) jumpInt = 1'b1;
+                else if(call) jumpCall = 1'b1; 
             end
         end
         RET: begin

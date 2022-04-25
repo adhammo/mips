@@ -107,7 +107,7 @@ module cpu (
   // Memory
   wire [15:0] do;
   //Memory Control
-  wire callM, jumpM;
+  wire callM, jumpM, intM;
   wire [31:0] me_target;
 
   // ===== Write =====
@@ -142,7 +142,7 @@ module cpu (
   // PC Register
   pc_reg pc_reg (.clk(clk), .rst(rst),
                  .enable(!keepF||(!dirtyF&&fetch)),
-                 .load(jump || fetch || jumpM),
+                 .load(jump || fetch || jumpM || callM),
                  .in(pc_in),
                  .pc(pc));
 
@@ -153,7 +153,7 @@ module cpu (
     if (fetch) begin
       case (fetchSrc)
         RSTSRC: instrAddr = 32'b0;
-        INTSRC: instrAddr = 32'd4 + me_s1; //Index + 4
+        INTSRC: instrAddr = 32'd4 + wb_r_s1; //Index + 4 
         default: instrAddr = 32'b0;
       endcase
     end else instrAddr = pc;
@@ -166,7 +166,7 @@ module cpu (
 
   // Fetch Control
   fetch_control fetch_control (.clk(clk), .rst(rst),
-                               .extend(extendF), .int(callM),
+                               .extend(extendF), .int(intM),
                                .fetch(fetch),
                                .fetchSrc(fetchSrc));
 
@@ -335,7 +335,7 @@ module cpu (
                            .int(me_int), .ret(me_ret), .call(me_call),
                            .count(count), 
                            .extend(extendM), 
-                           .jumpRet(jumpM), .jumpCall(callM));
+                           .jumpRet(jumpM), .jumpCall(callM), .jumpInt(intM));
   //Memory Shift Register
   shift_reg shift_reg (.clk(clk), .rst(rst),
                        .load(me_ret),
