@@ -14,7 +14,7 @@ module branch_logic (
     // default: no jump
     jump = 1'b0;
     
-    // check if branch
+    // check if valid
     if (valid) begin
       // calculate jump
       case (branch)
@@ -22,7 +22,6 @@ module branch_logic (
         JZ: jump = z;
         JN: jump = n;
         JC: jump = c;
-        default: jump = 1'b0;
       endcase
     end
   end

@@ -1,6 +1,7 @@
 module control_logic (
   input [6:0] opcode,
-  output wire int, call, ret, hlt,
+  output wire hlt,
+  output wire call, int, ret,
   output wire [2:0] branch,
   output wire setC, load,
   output wire in, out,
@@ -12,10 +13,12 @@ module control_logic (
 );
 
   // Control Code
-  reg [22:0] code;
+  reg [21:0] code;
 
-  // Control Signals E0traction
-  assign {int, call, ret, hlt, branch, setC, load, in, out,
+  // Control Signals Extraction
+  assign {hlt,
+          call, int, ret,
+          branch, setC, load, in, out,
           imm1, imm2,
           skipE, func,
           skipM, push, pop, wr,
@@ -25,7 +28,7 @@ module control_logic (
   always @(*) begin
     casez (opcode)
       7'b00000??: code = 22'b0000000000000100010001; // NOP
-      7'b00001??: code = 22'b0001000000000100010001; // HLT
+      7'b00001??: code = 22'b1000000000000100010001; // HLT
       7'b00010??: code = 22'b0000000100000100010001; // SETC
       7'b00011??: code = 22'b0000000001000100010000; // IN
       7'b00100??: code = 22'b0000000000100100010001; // OUT
@@ -48,11 +51,11 @@ module control_logic (
       7'b11001??: code = 22'b0000110000000100010001; // JN
       7'b11010??: code = 22'b0000111000000100010001; // JC
       7'b11011??: code = 22'b0000100000000100010001; // JMP
-      7'b11100??: code = 22'b0100000000010100001011; // CALL
-      7'b11101??: code = 22'b0010000000000100000101; // RET
-      7'b11110??: code = 22'b1000000000010100001011; // INT
-      7'b11111??: code = 22'b0010000000000100000101; // RTI
-      default: code = 22'b000000000000100010001;
+      7'b11100??: code = 22'b0100000000000100001011; // CALL
+      7'b11101??: code = 22'b0001000000000100000101; // RET
+      7'b11110??: code = 22'b0010000000010100001011; // INT
+      7'b11111??: code = 22'b0001000000000100000101; // RTI
+      default: code = 22'b0000000000000100010001;
     endcase
   end
 

@@ -1,5 +1,7 @@
 module fetch_control (
-  input clk, rst, int,
+  input clk, rst,
+  input valid, flush,
+  input int,
   output reg extend,
   output reg fetch,
   output reg [1:0] fetchSrc
@@ -8,39 +10,51 @@ module fetch_control (
   parameter RSTSRC = 2'b00;
   parameter INTSRC = 2'b01;
 
-  parameter NORM = 2'b00;
-  parameter RST  = 2'b01;
-  parameter INT  = 2'b10;
+  parameter STRT = 2'b00;
+  parameter NORM = 2'b01;
+  parameter  RST = 2'b10;
+  parameter  INT = 2'b11;
 
-  // Current State
-  reg [1:0] state;
+  // State
+  reg [1:0] state, nextState;
 
   // State Transition
   always @(posedge clk or negedge rst) begin
-    if (!rst) state <= RST;
-    else if(int) state <= INT;
-    else state <= NORM;
+    if (!rst) state <= STRT; // reset state
+    else state <= nextState; // next state
   end
 
   // State Operation
   always @(*) begin
-    case (state)
-      NORM: begin
-        extend = 1'b0;
-        fetch = 1'b0;
-        fetchSrc = 2'b00;
-      end
-      RST: begin
-        extend = 1'b1;
-        fetch = 1'b1;
-        fetchSrc = RSTSRC;
-      end
-      INT: begin
-        extend = 1'b1;
-        fetch = 1'b1;
-        fetchSrc = INTSRC;
-      end
-    endcase
+    // default: norm
+    extend = 1'b0;
+    fetch = 1'b0;
+    fetchSrc = 2'b00;
+
+    // check if valid
+    if (valid) begin
+      case (state)
+        RST: begin
+          extend = 1'b1;
+          fetch = 1'b1;
+          fetchSrc = RSTSRC;
+        end
+        INT: begin
+          extend = 1'b1;
+          fetch = 1'b1;
+          fetchSrc = INTSRC;
+        end
+      endcase
+    end
+  end
+
+  // Next State
+  always @(*) begin
+    if (int) nextState = INT;
+    else if (state == STRT) nextState = RST;
+    else if (flush) nextState = NORM;
+    else if (valid) nextState = NORM;
+    else nextState = state;
   end
 
 endmodule

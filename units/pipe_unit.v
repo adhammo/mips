@@ -13,7 +13,7 @@ module pipe_unit (
 
   // Pipeline Control (bubbles propagation)
   always @(posedge clk or negedge rst) begin
-    if (!rst) bubble <= 5'b01111;  // reset pipeline
+    if (!rst) bubble <= 5'b11111;  // reset pipeline
     else bubble <= nextBubble;     // advance pipeline
   end
 

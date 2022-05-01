@@ -25,7 +25,6 @@ module alu (
       AND: {c, r} = {1'b0, a & b};
       ORR: {c, r} = {1'b0, a | b};
       NOT: {c, r} = {1'b0, ~a};
-      default: {c, r} = 17'b0;
     endcase
 
     // calculate zero and negative flags

@@ -11,7 +11,7 @@ module hazard_logic (
     // default: no stall
     stallD = 1'b0;
 
-    // check if load
+    // check if valid and load
     if (ex_valid && ex_load) begin
       // stall decode (if needed)
       if (rsrc1 == ex_rdst && rsrc2 == ex_rdst) begin
@@ -22,7 +22,6 @@ module hazard_logic (
           7'b0100000: stallD = 1'b1; // ADD
           7'b0100001: stallD = 1'b1; // SUB
           7'b1011???: stallD = 1'b1; // STD
-          default: stallD = 1'b0;
         endcase
       end else if (rsrc1 == ex_rdst) begin
         // needs only first source
@@ -35,13 +34,11 @@ module hazard_logic (
           7'b0110???: stallD = 1'b1; // MOV
           7'b0101000: stallD = 1'b1; // IADD
           7'b1010???: stallD = 1'b1; // LDD
-          default: stallD = 1'b0;
         endcase
       end else if (rsrc2 == ex_rdst) begin
         // needs only second source
         casez (opcode)
           7'b1000???: stallD = 1'b1; // PUSH
-          default: stallD = 1'b0;
         endcase
       end
     end
