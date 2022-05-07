@@ -7,8 +7,10 @@ module cpu (
   // ##### Parameters #####
 
   // Fetch
-  parameter RSTSRC = 2'b00;
-  parameter INTSRC = 2'b01;
+  parameter RSTSRC   = 2'b00;
+  parameter EXPT1SRC = 2'b01;
+  parameter EXPT2SRC = 2'b10;
+  parameter INTSRC   = 2'b11;
 
   // Forward
   parameter MEF = 2'b10;
@@ -116,8 +118,8 @@ module cpu (
   // Memory
   wire [15:0] do;
   // Memory Jump
-  wire flushE;
-  wire memJump, memInt;
+  wire flushE, flushM;
+  wire memJump, memInt, memExpt1, memExpt2;
   wire [31:0] memTarget;
 
   // ===== Write =====
@@ -174,8 +176,8 @@ module cpu (
 
   // Fetch Control
   fetch_control fetch_control (.clk(clk), .rst(rst),
-                               .valid(!dirtyF), .flush(flushD || flushE),
-                               .int(memInt),
+                               .valid(!dirtyF), .flush(flushD || flushE || flushM),
+                               .int(memInt), .expt1(memExpt1), .expt2(memExpt2),
                                .extend(extendF),
                                .fetch(fetch),
                                .fetchSrc(fetchSrc));
@@ -364,7 +366,7 @@ module cpu (
 
   //Memory Control
   mem_control mem_control (.clk(clk), .rst(rst),
-                           .valid(!dirtyM), .flush(1'b0),
+                           .valid(!dirtyM), .flush(flushM),
                            .continue(me_call || me_int || me_ret),
                            .extend(extendM),
                            .offset(offset));
@@ -377,11 +379,14 @@ module cpu (
   assign memTarget = me_ret ? pc_load : me_target;
 
   // Memory Jump
-  assign memJump = (me_call || me_ret) && offset;
-  assign memInt = me_int && offset;
+  assign memJump  = (me_call || me_ret) && offset;
+  assign memInt   = me_int && offset;
+  assign memExpt1 = me_pop && (sp == 0xFFFF);
+  assign memExpt2 = (memAddr > 0xFF00);
 
   // Flush Execute
-  assign flushE = memJump || memInt;
+  assign flushE = memJump  || memInt;
+  assign flushM = memExpt1 || memExpt2;
 
   // ===== Write =====
 
@@ -404,7 +409,7 @@ module cpu (
   // Pipeline Unit
   pipe_unit pipe_unit (.clk(clk), .rst(rst),
                        .stall({1'b0, stallD, 1'b0, 1'b0, 1'b0}),
-                       .flush({1'b0, flushD, flushE, 1'b0, 1'b0}),
+                       .flush({1'b0, flushD, flushE, flushM, 1'b0}),
                        .extend({extendF, 1'b0, 1'b0, extendM, 1'b0}),
                        .keep({keepF, keepD, keepE, keepM, keepW}),
                        .dirty({dirtyF, dirtyD, dirtyE, dirtyM, dirtyW}));

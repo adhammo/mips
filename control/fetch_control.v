@@ -1,22 +1,25 @@
 module fetch_control (
   input clk, rst,
   input valid, flush,
-  input int,
+  input int, expt1, expt2,
   output reg extend,
   output reg fetch,
   output reg [1:0] fetchSrc
 );
+  parameter RSTSRC   = 2'b00;
+  parameter EXPT1SRC = 2'b01;
+  parameter EXPT2SRC = 2'b10;
+  parameter INTSRC   = 2'b11;
 
-  parameter RSTSRC = 2'b00;
-  parameter INTSRC = 2'b01;
-
-  parameter STRT = 2'b00;
-  parameter NORM = 2'b01;
-  parameter  RST = 2'b10;
-  parameter  INT = 2'b11;
+  parameter STRT  = 3'b000;
+  parameter NORM  = 3'b001;
+  parameter RST   = 3'b010;
+  parameter INT   = 3'b011;
+  parameter EXPT1 = 3'b100;
+  parameter EXPT2 = 3'b101;
 
   // State
-  reg [1:0] state, nextState;
+  reg [2:0] state, nextState;
 
   // State Transition
   always @(posedge clk or negedge rst) begin
@@ -44,17 +47,27 @@ module fetch_control (
           fetch = 1'b1;
           fetchSrc = INTSRC;
         end
+        EXPT1: begin
+          extend = 1'b1;
+          fetch = 1'b1;
+          fetchSrc = EXPT1SRC;
+        end
+        EXPT2: begin
+          extend = 1'b1;
+          fetch = 1'b1;
+          fetchSrc = EXPT2SRC;
+        end
       endcase
     end
   end
-
   // Next State
   always @(*) begin
     if (int) nextState = INT;
+    else if (expt1) nextState = EXPT1;
+    else if (expt2) nextState = EXPT2;
     else if (state == STRT) nextState = RST;
     else if (flush) nextState = NORM;
     else if (valid) nextState = NORM;
     else nextState = state;
   end
-
 endmodule
