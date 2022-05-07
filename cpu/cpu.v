@@ -24,7 +24,7 @@ module cpu (
 
   // ===== Fetch =====
   // -- Inputs
-  wire [31:0] pc;
+  wire [31:0] pc, epc;
 
   // -- Fetch Control Outputs
   wire extendF;
@@ -68,7 +68,8 @@ module cpu (
   wire [31:0] ex_pc;
   wire [2:0] ex_rdst, ex_rsrc1, ex_rsrc2;
   wire [15:0] ex_rd1, ex_rd2, ex_imm, ex_input;
-  wire ex_call, ex_int, ex_ret;
+  wire ex_hlt, ex_call, ex_int, ex_ret;
+  wire hltOut;
   wire [2:0] ex_branch;
   wire ex_setC, ex_load;
   wire ex_in, ex_out;
@@ -181,7 +182,11 @@ module cpu (
                                .extend(extendF),
                                .fetch(fetch),
                                .fetchSrc(fetchSrc));
-
+  // EPC
+  register #(WIDTH = 32) EPC (.clk(clk), .rst(rst),
+                              .load(!dirtyF && (memExpt1 || memExpt2)),
+                              .in(pc),
+                              .out(epc));
   // ===== Decode ====
 
   // IF/ID Register
@@ -250,16 +255,16 @@ module cpu (
   // ===== Exec ======
 
   // ID/EX Register
-  wire [125:0] id_ex_in, id_ex_out;
-  assign id_ex_in = {call, int, ret, branch, setC, load, in, out,
+  wire [126:0] id_ex_in, id_ex_out;
+  assign id_ex_in = {hlt, call, int, ret, branch, setC, load, in, out,
                      imm1, imm2, rsrc1, rsrc2,
                      skipE, func, skipM, push, pop, wr, skipW,
                      inputData, imm, rd2, rd1, rdst, id_pc};
-  assign {ex_call, ex_int, ex_ret, ex_branch, ex_setC, ex_load, ex_in, ex_out,
+  assign {ex_hlt, ex_call, ex_int, ex_ret, ex_branch, ex_setC, ex_load, ex_in, ex_out,
           ex_imm1, ex_imm2, ex_rsrc1, ex_rsrc2,
           ex_skipE, ex_func, ex_skipM, ex_push, ex_pop, ex_wr, ex_skipW,
           ex_input, ex_imm, ex_rd2, ex_rd1, ex_rdst, ex_pc} = id_ex_out;
-  stage_reg #(.WIDTH(126)) id_ex_reg (.clk(clk), .rst(rst),
+  stage_reg #(.WIDTH(127)) id_ex_reg (.clk(clk), .rst(rst),
                                       .keep(keepE),
                                       .in(id_ex_in),
                                       .out(id_ex_out));
@@ -302,7 +307,10 @@ module cpu (
                        .a(a), .b(b),
                        .r(r),
                        .z(zo), .n(no), .c(co));
-
+  register #(WIDTH = 1) HLT(.clk(clk), .rst(rst), 
+                              .load(!dirtyE), 
+                              .in(ex_hlt), 
+                              .out(hltOut));
   // Flags Register
   flags_reg flags_reg (.clk(clk), .rst(rst),
                        .enable(!dirtyE),
@@ -408,8 +416,8 @@ module cpu (
 
   // Pipeline Unit
   pipe_unit pipe_unit (.clk(clk), .rst(rst),
-                       .stall({1'b0, stallD, 1'b0, 1'b0, 1'b0}),
-                       .flush({1'b0, flushD, flushE, flushM, 1'b0}),
+                       .stall({1'b0, stallD, 1'b0 | hltOut, 1'b0, 1'b0}),
+                       .flush({1'b0, flushD, flushE | hltOut, flushM, 1'b0}),
                        .extend({extendF, 1'b0, 1'b0, extendM, 1'b0}),
                        .keep({keepF, keepD, keepE, keepM, keepW}),
                        .dirty({dirtyF, dirtyD, dirtyE, dirtyM, dirtyW}));

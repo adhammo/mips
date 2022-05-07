@@ -1,9 +1,9 @@
 <p align="center">
   <a href="https://github.com/adhammo/mips" rel="noopener">
     
-  <img src="Gallery/processor.png" style="width:60px;height:60px;float:left;">
+  <img src="Gallery/processor.png" style="width:80px;height:80px;float:left;">
   </a>
-  <h2 align="center" style="font-size:170%; font-color:black;">Pipelined MIPS Processor</h3>
+  <h2 align="center" style="font-size:170%; font-color:black;">Pipelined MIPS Processor</h2>
 </p>
 
 
