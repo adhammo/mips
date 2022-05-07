@@ -163,9 +163,11 @@ module cpu (
     // calculate fetch address
     if (fetch) begin
       case (fetchSrc)
-        RSTSRC: instrAddr = 32'd0;
-        INTSRC: instrAddr = 32'd12 + ({16'b0, wb_r_s1} << 2);
-        default: instrAddr = 32'd0;
+        RSTSRC:   instrAddr = 32'd0;
+        EXPT1SRC: instrAddr = 32'd1;
+        EXPT2SRC: instrAddr = 32'd2;
+        INTSRC:   instrAddr = 32'd12 + ({16'b0, wb_r_s1} << 2);
+        default:  instrAddr = 32'd0;
       endcase
     end else instrAddr = pc;
   end
