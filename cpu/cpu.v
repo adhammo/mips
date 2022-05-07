@@ -381,8 +381,8 @@ module cpu (
   // Memory Jump
   assign memJump  = (me_call || me_ret) && offset;
   assign memInt   = me_int && offset;
-  assign memExpt1 = me_pop && (sp == 0xFFFF);
-  assign memExpt2 = (memAddr > 0xFF00);
+  assign memExpt1 = me_pop && (sp == 32'hFFFFFFFF);
+  assign memExpt2 = (memAddr > 32'hFFFF0000);
 
   // Flush Execute
   assign flushE = memJump  || memInt;
