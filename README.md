@@ -1,46 +1,24 @@
-<p align="center">
-  <a href="https://github.com/adhammo/mips" rel="noopener">
-    
-  <img src="Gallery/processor.png" style="width:80px;height:80px;float:left;">
-  </a>
-  <h2 align="center" style="font-size:170%; font-color:black;">Pipelined MIPS Processor</h2>
-</p>
-
-
 <div align="center">
 
+[![](misc/gallery/processor.png)](https://github.com/adhammo/mips)
+
+# Pipelined MIPS Processor
+
 [![GitHub contributors](https://img.shields.io/github/contributors/adhammo/mips)](https://github.com/adhammo/mips/contributors)
-[![GitHub issues](https://img.shields.io/github/issues/adhammo/mips)](https://github.com/adhammo/mips/issues)
-[![GitHub forks](https://img.shields.io/github/forks/adhammo/mips)](https://github.com/adhammo/mips/network)
 [![GitHub stars](https://img.shields.io/github/stars/adhammo/mips)](https://github.com/adhammo/mips/stargazers)
-<img src="https://img.shields.io/github/languages/top/adhammo/mips"> 
+![Programming Languages](https://img.shields.io/github/languages/top/adhammo/mips)
 
 </div>
 
 
-# About
-> Implementation for a pipelined RISC processor similar to MIPS 
+## About
+
+Design and a Verilog implementation of a **pipelined RISC processor** (*similar to MIPS*) having this [custom instruction set architecture](https://drive.google.com/file/d/1VXQzVpdnJppStDd_IuM1Ivdhi6VVf02v/view?usp=sharing).
 
 
-## Getting Started
-> **_Check this link for the list of instructions, their format, and the compiler._**
-https://docs.google.com/spreadsheets/d/1RwGrLKuL3zEaNrocaprRyZuye82vGOtLNqpMNZzUuVI/edit#gid=574284862
+## Documentaion
 
-> **_Also, check the diagram:_** https://drive.google.com/file/d/17KSOWljiWCOGefqKpOg3AwJ1q1VBbHUL/view
+Check this [google spreadsheet](https://docs.google.com/spreadsheets/d/1RwGrLKuL3zEaNrocaprRyZuye82vGOtLNqpMNZzUuVI/edit#gid=574284862), which contains the instruction set of the processor and an assembler.
 
-### Installation
+Check this [block diagram](https://drive.google.com/file/d/17KSOWljiWCOGefqKpOg3AwJ1q1VBbHUL/view), which has detailed information about the processor design (registers, signals, etc.).
 
- **_Clone the repository_**
->```sh
->$ git clone https://github.com/adhammo/mips.git
->```
-
-## Screenshots
-
-<div align="center" width="500px">
-
-
-</div>
-
-## License
-> This software is licensed under MIT License, See [License](https://github.com/AbdallahHemdan/Qurany/blob/master/LICENSE) for more information ©AbdallahHemdan.

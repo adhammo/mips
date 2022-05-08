@@ -42,11 +42,6 @@ module fetch_control (
           fetch = 1'b1;
           fetchSrc = RSTSRC;
         end
-        INT: begin
-          extend = 1'b1;
-          fetch = 1'b1;
-          fetchSrc = INTSRC;
-        end
         EXPT1: begin
           extend = 1'b1;
           fetch = 1'b1;
@@ -57,17 +52,24 @@ module fetch_control (
           fetch = 1'b1;
           fetchSrc = EXPT2SRC;
         end
+        INT: begin
+          extend = 1'b1;
+          fetch = 1'b1;
+          fetchSrc = INTSRC;
+        end
       endcase
     end
   end
+
   // Next State
   always @(*) begin
-    if (int) nextState = INT;
-    else if (expt1) nextState = EXPT1;
+    if (expt1) nextState = EXPT1;
     else if (expt2) nextState = EXPT2;
+    else if (int) nextState = INT;
     else if (state == STRT) nextState = RST;
     else if (flush) nextState = NORM;
     else if (valid) nextState = NORM;
     else nextState = state;
   end
+
 endmodule
