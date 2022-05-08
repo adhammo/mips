@@ -5,7 +5,6 @@
 # Pipelined MIPS Processor
 
 [![GitHub contributors](https://img.shields.io/github/contributors/adhammo/mips)](https://github.com/adhammo/mips/contributors)
-[![GitHub stars](https://img.shields.io/github/stars/adhammo/mips)](https://github.com/adhammo/mips/stargazers)
 ![Programming languages](https://img.shields.io/github/languages/top/adhammo/mips)
 
 </div>
