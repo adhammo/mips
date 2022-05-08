@@ -20,6 +20,8 @@ module cpu (
 
   // Keep and Dirty
   wire keepF, keepD, keepE, keepM, keepW;
+  wire throwF, throwD, throwE, throwM, throwW;
+  wire dirtyNowF, dirtyNowD, dirtyNowE, dirtyNowM, dirtyNowW;
   wire dirtyF, dirtyD, dirtyE, dirtyM, dirtyW;
 
   // ===== Fetch =====
@@ -186,7 +188,7 @@ module cpu (
 
   // Fetch Control
   fetch_control fetch_control (.clk(clk), .rst(rst),
-                               .valid(!dirtyF), .flush(flushD || flushE || flushM),
+                               .valid(!dirtyF), .flush(throwF),
                                .int(memInt), .expt1(memExpt1), .expt2(memExpt2),
                                .extend(extendF),
                                .fetch(fetch),
@@ -347,9 +349,14 @@ module cpu (
                                      .in(ex_me_in),
                                      .out(ex_me_out));
 
+  // Memory Error
+  wire badPop, badAddr;
+  assign badPop = sp == 32'hFFFFFFFE || (me_ret && sp == 32'hFFFFFFFC);
+  assign badAddr = me_r >= 16'hFF00;
+
   // Memory Exception
-  assign memExpt1 = me_pop && (sp == 32'hFFFFFFFF);
-  assign memExpt2 = me_r >= 16'hFF00;
+  assign memExpt1 = !(dirtyNowM || me_skipM) && me_pop && badPop;
+  assign memExpt2 = !(dirtyNowM || me_skipM) && !(me_push || me_pop) && badAddr;
   assign memExpt = memExpt1 || memExpt2;
 
   // Flush Memory
@@ -390,7 +397,7 @@ module cpu (
 
   //Memory Control
   mem_control mem_control (.clk(clk), .rst(rst),
-                           .valid(!dirtyM), .flush(flushM),
+                           .valid(!dirtyM), .flush(throwM),
                            .continue(me_call || me_int || me_ret),
                            .extend(extendM),
                            .offset(offset));
@@ -433,6 +440,8 @@ module cpu (
                        .flush({1'b0, flushD, flushE, flushM, 1'b0}),
                        .extend({extendF, 1'b0, 1'b0, extendM, 1'b0}),
                        .keep({keepF, keepD, keepE, keepM, keepW}),
+                       .throw({throwF, throwD, throwE, throwM, throwW}),
+                       .dirtyNow({dirtyNowF, dirtyNowD, dirtyNowE, dirtyNowM, dirtyNowW}),
                        .dirty({dirtyF, dirtyD, dirtyE, dirtyM, dirtyW}));
 
 endmodule

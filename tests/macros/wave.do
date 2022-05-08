@@ -5,13 +5,15 @@ add wave -noupdate -group Ports -label output -radix hexadecimal /cpu_tb/out
 add wave -noupdate -group Pipeline -label flush -radix binary /cpu_tb/cpu/pipe_unit/flush
 add wave -noupdate -group Pipeline -label stall -radix binary /cpu_tb/cpu/pipe_unit/stall
 add wave -noupdate -group Pipeline -label extend -radix binary /cpu_tb/cpu/pipe_unit/extend
-add wave -noupdate -group Pipeline -label dirty -radix binary /cpu_tb/cpu/pipe_unit/dirty
 add wave -noupdate -group Pipeline -label keep -radix binary /cpu_tb/cpu/pipe_unit/keep
+add wave -noupdate -group Pipeline -label throw -radix binary /cpu_tb/cpu/pipe_unit/throw
+add wave -noupdate -group Pipeline -label dirtyNow -radix binary /cpu_tb/cpu/pipe_unit/dirtyNow
+add wave -noupdate -group Pipeline -label dirty -radix binary /cpu_tb/cpu/pipe_unit/dirty
 add wave -noupdate -group Fetch -label jump -radix binary /cpu_tb/cpu/jump
 add wave -noupdate -group Fetch -label memJump -radix binary /cpu_tb/cpu/memJump
-add wave -noupdate -group Fetch -label memInt -radix binary /cpu_tb/cpu/memInt
 add wave -noupdate -group Fetch -label target -radix hexadecimal /cpu_tb/cpu/target
 add wave -noupdate -group Fetch -label memTarget -radix hexadecimal /cpu_tb/cpu/memTarget
+add wave -noupdate -group Fetch -label memInt -radix binary /cpu_tb/cpu/memInt
 add wave -noupdate -group Fetch -label fetch -radix binary /cpu_tb/cpu/fetch
 add wave -noupdate -group Fetch -label fetchSrc -radix binary /cpu_tb/cpu/fetchSrc
 add wave -noupdate -group Fetch -label pc_in -radix hexadecimal /cpu_tb/cpu/pc_in
@@ -45,7 +47,6 @@ add wave -noupdate -group Decode -group control -label push -radix binary /cpu_t
 add wave -noupdate -group Decode -group control -label pop -radix binary /cpu_tb/cpu/pop
 add wave -noupdate -group Decode -group control -label wr -radix binary /cpu_tb/cpu/wr
 add wave -noupdate -group Decode -group control -label skipW -radix binary /cpu_tb/cpu/skipW
-add wave -noupdate -group Decode -label stallD -radix binary /cpu_tb/cpu/stallD
 add wave -noupdate -group Execute -label pc -radix hexadecimal /cpu_tb/cpu/ex_pc
 add wave -noupdate -group Execute -label rdst -radix unsigned /cpu_tb/cpu/ex_rdst
 add wave -noupdate -group Execute -label rsrc1 -radix unsigned /cpu_tb/cpu/ex_rsrc1
@@ -54,6 +55,7 @@ add wave -noupdate -group Execute -label imm -radix hexadecimal /cpu_tb/cpu/ex_i
 add wave -noupdate -group Execute -label input -radix hexadecimal /cpu_tb/cpu/ex_input
 add wave -noupdate -group Execute -label rd1 -radix hexadecimal /cpu_tb/cpu/ex_rd1
 add wave -noupdate -group Execute -label rd2 -radix hexadecimal /cpu_tb/cpu/ex_rd2
+add wave -noupdate -group Execute -group control -label hlt -radix binary /cpu_tb/cpu/ex_hlt
 add wave -noupdate -group Execute -group control -label call -radix binary /cpu_tb/cpu/ex_call
 add wave -noupdate -group Execute -group control -label int -radix binary /cpu_tb/cpu/ex_int
 add wave -noupdate -group Execute -group control -label ret -radix binary /cpu_tb/cpu/ex_ret
@@ -86,11 +88,13 @@ add wave -noupdate -group Execute -group Flags -label n -radix binary /cpu_tb/cp
 add wave -noupdate -group Execute -group Flags -label c -radix binary /cpu_tb/cpu/c
 add wave -noupdate -group Execute -label jump -radix binary /cpu_tb/cpu/jump
 add wave -noupdate -group Execute -label target -radix hexadecimal /cpu_tb/cpu/target
+add wave -noupdate -group Execute -label halted -radix binary /cpu_tb/cpu/halted
 add wave -noupdate -group Memory -label pc -radix hexadecimal /cpu_tb/cpu/me_pc
 add wave -noupdate -group Memory -label rdst -radix unsigned /cpu_tb/cpu/me_rdst
 add wave -noupdate -group Memory -label s1 -radix hexadecimal /cpu_tb/cpu/me_s1
-add wave -noupdate -group Memory -label r -radix hexadecimal /cpu_tb/cpu/me_r
 add wave -noupdate -group Memory -label s2 -radix hexadecimal /cpu_tb/cpu/me_s2
+add wave -noupdate -group Memory -label r -radix hexadecimal /cpu_tb/cpu/me_r
+add wave -noupdate -group Memory -label r_s1 -radix hexadecimal /cpu_tb/cpu/r_s1
 add wave -noupdate -group Memory -label target -radix hexadecimal /cpu_tb/cpu/me_target
 add wave -noupdate -group Memory -group control -label call -radix binary /cpu_tb/cpu/me_call
 add wave -noupdate -group Memory -group control -label int -radix binary /cpu_tb/cpu/me_int
@@ -102,17 +106,18 @@ add wave -noupdate -group Memory -group control -label push -radix binary /cpu_t
 add wave -noupdate -group Memory -group control -label pop -radix binary /cpu_tb/cpu/me_pop
 add wave -noupdate -group Memory -group control -label wr -radix binary /cpu_tb/cpu/me_wr
 add wave -noupdate -group Memory -group control -label skipW -radix binary /cpu_tb/cpu/me_skipW
-add wave -noupdate -group Memory -label sp -radix hexadecimal /cpu_tb/cpu/sp
-add wave -noupdate -group Memory -label r_s1 -radix hexadecimal /cpu_tb/cpu/r_s1
+add wave -noupdate -group Memory -label memExpt1 -radix binary /cpu_tb/cpu/memExpt1
+add wave -noupdate -group Memory -label memExpt2 -radix binary /cpu_tb/cpu/memExpt2
 add wave -noupdate -group Memory -label pc_save -radix hexadecimal /cpu_tb/cpu/pc_save
 add wave -noupdate -group Memory -label offset -radix hexadecimal /cpu_tb/cpu/offset
+add wave -noupdate -group Memory -label sp -radix hexadecimal /cpu_tb/cpu/sp
 add wave -noupdate -group Memory -label memAddr -radix hexadecimal /cpu_tb/cpu/memAddr
 add wave -noupdate -group Memory -label memInput -radix hexadecimal /cpu_tb/cpu/memInput
 add wave -noupdate -group Memory -label do -radix hexadecimal /cpu_tb/cpu/do
 add wave -noupdate -group Memory -label pc_load -radix hexadecimal /cpu_tb/cpu/pc_load
-add wave -noupdate -group Memory -label memInt -radix binary /cpu_tb/cpu/memInt
 add wave -noupdate -group Memory -label memJump -radix binary /cpu_tb/cpu/memJump
 add wave -noupdate -group Memory -label memTarget -radix hexadecimal /cpu_tb/cpu/memTarget
+add wave -noupdate -group Memory -label memInt -radix binary /cpu_tb/cpu/memInt
 add wave -noupdate -group Write -label pc -radix hexadecimal /cpu_tb/cpu/wb_pc
 add wave -noupdate -group Write -label rdst -radix unsigned /cpu_tb/cpu/wb_rdst
 add wave -noupdate -group Write -label r_s1 -radix hexadecimal /cpu_tb/cpu/wb_r_s1

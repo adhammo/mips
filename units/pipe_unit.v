@@ -4,7 +4,9 @@ module pipe_unit (
   input [4:0] flush,
   input [4:0] extend,
   output reg [4:0] keep,
-  output reg [4:0] dirty
+  output reg [4:0] throw,
+  output reg [4:0] dirtyNow,
+  output wire [4:0] dirty
 );
 
   // Bubbles Register
@@ -51,13 +53,25 @@ module pipe_unit (
     keep[4] = |stall[4:0] || |extend[4:0];
   end
 
-  // Dirty Values
+  // Throw Values
   always @(*) begin
-    dirty[0] = bubble[0] || flush[0] || stall[0];
-    dirty[1] = bubble[1] || |flush[1:0] || |stall[1:0] || extend[0];
-    dirty[2] = bubble[2] || |flush[2:0] || |stall[2:0] || |extend[1:0];
-    dirty[3] = bubble[3] || |flush[3:0] || |stall[3:0] || |extend[2:0];
-    dirty[4] = bubble[4] || |flush[4:0] || |stall[4:0] || |extend[3:0];
+    throw[0] = flush[0];
+    throw[1] = |flush[1:0];
+    throw[2] = |flush[2:0];
+    throw[3] = |flush[3:0];
+    throw[4] = |flush[4:0];
   end
+
+  // DirtyNow Values
+  always @(*) begin
+    dirtyNow[0] = bubble[0] || stall[0];
+    dirtyNow[1] = bubble[1] || |stall[1:0] || extend[0];
+    dirtyNow[2] = bubble[2] || |stall[2:0] || |extend[1:0];
+    dirtyNow[3] = bubble[3] || |stall[3:0] || |extend[2:0];
+    dirtyNow[4] = bubble[4] || |stall[4:0] || |extend[3:0];
+  end
+
+  // Dirty Values
+  assign dirty = dirtyNow | throw;
 
 endmodule
